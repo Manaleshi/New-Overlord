@@ -4,7 +4,7 @@ import os
 import random
 from datetime import datetime
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='Static')
 
 # Add CSP bypass for development
 @app.after_request
