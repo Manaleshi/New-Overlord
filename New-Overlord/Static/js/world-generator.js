@@ -4,6 +4,7 @@
 class WorldGenerator {
     constructor() {
         this.hexMap = new HexMap('hex-map');
+        this.nameGenerator = new SettlementNameGenerator();
         this.terrainTypes = {};
         this.raceTypes = {};
         
