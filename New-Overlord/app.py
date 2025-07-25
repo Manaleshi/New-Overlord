@@ -6,6 +6,12 @@ from datetime import datetime
 
 app = Flask(__name__)
 
+# Add CSP bypass for development
+@app.after_request
+def after_request(response):
+    response.headers['Content-Security-Policy'] = "default-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+    return response
+
 # Configuration
 WORLD_DATA_DIR = 'worlds'
 CONFIG_DIR = 'config'
