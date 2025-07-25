@@ -71,6 +71,24 @@ def get_race_types():
         }
         return jsonify(default_races)
 
+@app.route('/api/settlement-names')
+def get_settlement_names():
+    """Get settlement name generation data"""
+    try:
+        with open(os.path.join(CONFIG_DIR, 'settlement-names.json'), 'r') as f:
+            name_data = json.load(f)
+        return jsonify(name_data)
+    except FileNotFoundError:
+        # Return basic name data if file doesn't exist
+        default_names = {
+            "name_components": {
+                "prefixes": ["Gold", "Silver", "Stone", "River", "Green", "White", "Red", "Iron", "Oak", "Pine"],
+                "middle_parts": ["vale", "ford", "wood", "haven", "ridge", "brook", "hill", "dale", "field", "grove"],
+                "suffixes": ["ton", "ham", "shire", "port", "burg", "keep", "peak", "wood", "dale", "crest"]
+            }
+        }
+        return jsonify(default_names)
+
 @app.route('/api/generate-world', methods=['POST'])
 def generate_world():
     """Generate a new world based on parameters"""
@@ -129,7 +147,11 @@ def generate_world():
                         "name": f"{settlement_type.title()} {placed_settlements + 1}"
                     }
                     
-                    world_data["hexes"][hex_id]["population_center"] = settlement_id
+                    world_data["hexes"][hex_id]["population_center"] = {
+                        "type": settlement_type,
+                        "name": f"{settlement_type.title()} {placed_settlements + 1}",
+                        "population": 1000 if settlement_type == "city" else 500
+                    }
                     placed_settlements += 1
             
             attempts += 1
