@@ -1,0 +1,148 @@
+{
+  "cultural_naming_styles": {
+    "fantasy": {
+      "name": "Fantasy",
+      "description": "Generic fantasy settlement names",
+      "prefixes": [
+        "Gold", "Silver", "Stone", "River", "Green", "White", "Black", "Red",
+        "Blue", "Iron", "Crystal", "Shadow", "Bright", "Deep", "High", "New",
+        "Old", "North", "South", "East", "West", "Fair", "Dark", "Swift",
+        "Crow", "Eagle", "Wolf", "Bear", "Oak", "Pine", "Elm", "Ash"
+      ],
+      "middle_parts": [
+        "vale", "ford", "bury", "wood", "haven", "marsh", "ridge", "brook",
+        "creek", "bridge", "gate", "mill", "hill", "dale", "moor", "glen",
+        "grove", "hollow", "meadow", "field", "spring", "well", "shore",
+        "coast", "bay", "cove", "point", "cross", "end", "view"
+      ],
+      "suffixes": [
+        "ton", "ham", "shire", "port", "hold", "keep", "burg", "stadt",
+        "by", "thorpe", "wick", "worth", "stead", "fell", "hurst", "lea",
+        "ley", "fold", "garth", "thwaite", "beck", "burn", "holm", "barrow",
+        "mount", "peak", "crest", "height", "summit"
+      ]
+    },
+    "norse": {
+      "name": "Norse/Viking",
+      "description": "Viking and Norse settlement naming traditions",
+      "prefixes": [
+        "Grim", "Thor", "Hrafn", "Bjorn", "Eirik", "Olaf", "Ragnar", "Leif",
+        "Gunnar", "Magnus", "Sigurd", "Harald", "Sven", "Knut", "Rolf", "Orm",
+        "Ulf", "Haki", "Hakon", "Ivar", "Ragnhild", "Astrid", "Ingvar", "Torkel"
+      ],
+      "suffixes": [
+        "by", "thorpe", "holm", "kirk", "vik", "stad", "toft", "thwaite",
+        "beck", "fell", "garth", "gill", "rigg", "scar", "force", "tarn"
+      ],
+      "patterns": ["prefix + suffix"],
+      "preferred_terrain": ["coast", "hills", "plains", "forests"]
+    },
+    "celtic": {
+      "name": "Celtic/Gaelic",
+      "description": "Celtic and Gaelic settlement naming traditions",
+      "prefixes": [
+        "Bal", "Dun", "Glen", "Kil", "Strath", "Ben", "Aber", "Ard", "Auch",
+        "Drum", "Inver", "Llan", "Pen", "Tre", "Caer", "Cwm", "Nant", "Pont"
+      ],
+      "suffixes": [
+        "dun", "glen", "more", "beg", "knock", "craig", "garth", "lyn", "bach",
+        "mawr", "fach", "wen", "goch", "las", "ddu", "newydd"
+      ],
+      "middle_parts": [
+        "aber", "avon", "cwm", "glyn", "llyn", "mynydd", "pen", "rhyd", "tref"
+      ],
+      "patterns": ["prefix + suffix", "prefix + middle + suffix"],
+      "preferred_terrain": ["hills", "forests", "mountains", "swamps"]
+    },
+    "germanic": {
+      "name": "Germanic",
+      "description": "Germanic settlement naming traditions",
+      "prefixes": [
+        "Berg", "Burg", "Wald", "Stein", "Adler", "Wolf", "Bär", "Eichen",
+        "Tannen", "Felsen", "Schnee", "Feuer", "Wasser", "Himmel", "Stern",
+        "Mond", "Sonne", "Sturm", "Donner", "Blitz"
+      ],
+      "suffixes": [
+        "berg", "burg", "wald", "heim", "dorf", "hausen", "fels", "thal",
+        "brunn", "bach", "au", "hof", "kirch", "mark", "rode", "stedt"
+      ],
+      "patterns": ["prefix + suffix"],
+      "preferred_terrain": ["mountains", "forests", "hills"]
+    },
+    "anglo_saxon": {
+      "name": "Anglo-Saxon",
+      "description": "Anglo-Saxon settlement naming traditions",
+      "prefixes": [
+        "Æthel", "Wulf", "Ead", "Cyne", "Oswald", "Edgar", "Edmund", "Edward",
+        "Alfred", "Harold", "Godwin", "Leofric", "Aelfric", "Beorn", "Cnut"
+      ],
+      "suffixes": [
+        "ton", "ham", "worth", "ford", "burgh", "stead", "lea", "field", "well",
+        "hill", "wood", "thorpe", "by", "cot", "wick"
+      ],
+      "patterns": ["prefix + suffix"],
+      "preferred_terrain": ["plains", "hills"]
+    }
+  },
+  "terrain_cultural_preferences": {
+    "plains": ["fantasy", "anglo_saxon", "norse"],
+    "hills": ["celtic", "germanic", "fantasy"],
+    "mountains": ["germanic", "celtic", "fantasy"],
+    "forests": ["germanic", "celtic", "fantasy"],
+    "swamps": ["celtic", "fantasy"],
+    "deserts": ["fantasy"],
+    "coast": ["norse", "fantasy"]
+  },
+  "settlement_type_modifiers": {
+    "village": {
+      "name_style": "simple",
+      "preferred_patterns": ["prefix + suffix"],
+      "avoid_grand_prefixes": true
+    },
+    "town": {
+      "name_style": "moderate", 
+      "preferred_patterns": ["prefix + suffix", "prefix + middle + suffix"],
+      "favor_trade_names": true
+    },
+    "city": {
+      "name_style": "grand",
+      "preferred_patterns": ["prefix + suffix", "prefix + middle + suffix"],
+      "grand_prefixes": ["Great", "High", "Royal", "Grand"],
+      "grand_suffixes": ["burg", "heim", "stadt", "shire"]
+    }
+  },
+  "unique_city_names": {
+    "fantasy": [
+      "Dragonspire", "Ironhold", "Crownhaven", "Goldthrone", "Silverspire",
+      "Crystalkeep", "Shadowheart", "Brightcrown", "Stormhold", "Flamekeep"
+    ],
+    "norse": [
+      "Thorsgard", "Valhalla", "Asgardheim", "Midgardburg", "Jormunvik"
+    ],
+    "celtic": [
+      "Caerdun", "Glenmorvat", "Duncarraig", "Strathallan", "Balmorven"
+    ],
+    "germanic": [
+      "Drachenburg", "Königsheim", "Himmelsfels", "Sternenwald", "Donnerhall"
+    ],
+    "anglo_saxon": [
+      "Æthelburg", "Cynehall", "Eadweardston", "Godwinham", "Oswaldsfort"
+    ]
+  },
+  "special_names": {
+    "coastal": {
+      "norse": ["Sævik", "Hafnholm", "Strandby", "Skipsthorpe", "Fiskholm"],
+      "fantasy": ["Seahaven", "Saltwind", "Tidecrest", "Waverly", "Shoreham"]
+    },
+    "mountain": {
+      "germanic": ["Bergfels", "Steinspitze", "Himmelberg", "Felsenburg", "Gipfelheim"],
+      "celtic": ["Bendun", "Craigmore", "Knockbeg", "Penmawr", "Ardglen"],
+      "fantasy": ["Skyreach", "Cloudpeak", "Stormcrest", "Windspire", "Snowfall"]
+    },
+    "forest": {
+      "germanic": ["Waldheim", "Eichenwald", "Tannengrün", "Buchenhof", "Waldburg"],
+      "celtic": ["Glenwood", "Coillmore", "Derryowen", "Killdarach", "Coillbeg"],
+      "fantasy": ["Greenleaf", "Oakenheart", "Pinegrove", "Willowdale", "Elmwood"]
+    }
+  }
+}
