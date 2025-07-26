@@ -279,7 +279,7 @@ class HexMap {
         }
     }
     
-    displayMovementDirections(directions) {
+displayMovementDirections(directions) {
         const container = document.getElementById('movement-directions');
         if (!container) return;
         
@@ -303,11 +303,11 @@ class HexMap {
                     html += ` (requires ${walking.requirements.join(' or ')})`;
                 }
             } else {
-                html += `Walking: ${walking.min_days}-${walking.max_days} days`;
-                if (riding.min_days !== walking.min_days) {
-                    html += `, Riding: ${riding.min_days}-${riding.max_days} days`;
+                html += `Walking: ${walking.days} days`;
+                if (riding.days !== walking.days) {
+                    html += `, Riding: ${riding.days} days`;
                 }
-                html += `, Flying: ${flying.min_days} days`;
+                html += `, Flying: ${flying.days} days`;
             }
             html += '</div>';
         });
