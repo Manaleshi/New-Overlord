@@ -248,9 +248,6 @@ class HexMap {
                 this.changeHexTerrain(x, y, btn.dataset.terrain);
             });
         });
-    }.dataset.terrain);
-            });
-        });
     }
     
     changeHexTerrain(x, y, newTerrain) {
