@@ -1,127 +1,105 @@
-import random
-import json
-import os
-
-class SettlementNameGenerator:
-    def __init__(self, config_dir='config'):
-        self.config_dir = config_dir
-        self.name_data = None
-        self.used_names = set()
-        self.load_name_data()
-    
-    def load_name_data(self):
-        """Load settlement naming data from JSON file"""
-        try:
-            filepath = os.path.join(self.config_dir, 'settlement-names.json')
-            with open(filepath, 'r') as f:
-                self.name_data = json.load(f)
-        except FileNotFoundError:
-            # Use basic fallback data if file doesn't exist
-            self.use_basic_name_data()
-    
-    def use_basic_name_data(self):
-        """Fallback basic naming data"""
-        self.name_data = {
-            "cultural_naming_styles": {
-                "fantasy": {
-                    "prefixes": ["Gold", "Silver", "Stone", "River", "Green", "Iron"],
-                    "suffixes": ["vale", "ford", "wood", "haven", "ridge", "burg"],
-                    "patterns": ["prefix + suffix"]
-                }
-            },
-            "terrain_cultural_preferences": {
-                "plains": ["fantasy"],
-                "hills": ["fantasy"],
-                "mountains": ["fantasy"],
-                "forests": ["fantasy"],
-                "swamps": ["fantasy"],
-                "deserts": ["fantasy"]
-            }
-        }
-    
-    def generate_name(self, terrain, settlement_type):
-        """Generate a unique settlement name"""
-        if not self.name_data:
-            self.use_basic_name_data()
-        
-        attempts = 0
-        name = ""
-        
-        # Try to generate a unique name
-        while attempts < 50:
-            name = self.create_name(terrain, settlement_type)
-            if name not in self.used_names:
-                break
-            attempts += 1
-        
-        # If we couldn't find a unique name, add a number
-        if name in self.used_names:
-            counter = 2
-            base_name = name
-            while f"{base_name} {counter}" in self.used_names and counter < 100:
-                counter += 1
-            name = f"{base_name} {counter}"
-        
-        self.used_names.add(name)
-        return name
-    
-    def create_name(self, terrain, settlement_type):
-        """Create a name using cultural naming conventions"""
-        # Choose cultural naming style based on terrain
-        cultural_style = self.choose_cultural_style(terrain)
-        style_data = self.name_data["cultural_naming_styles"].get(cultural_style)
-        
-        if not style_data:
-            return self.create_basic_name()
-        
-        # Check for unique city names first
-        if (settlement_type == 'city' and 
-            'unique_city_names' in self.name_data and
-            cultural_style in self.name_data['unique_city_names']):
-            if random.random() < 0.4:  # 40% chance for unique city name
-                city_names = self.name_data['unique_city_names'][cultural_style]
-                unused_names = [n for n in city_names if n not in self.used_names]
-                if unused_names:
-                    return random.choice(unused_names)
-        
-        # Check for special terrain-based names
-        if (terrain in self.name_data.get('special_names', {}) and
-            cultural_style in self.name_data['special_names'][terrain]):
-            if random.random() < 0.3:  # 30% chance for special name
-                special_names = self.name_data['special_names'][terrain][cultural_style]
-                return random.choice(special_names)
-        
-        # Generate compound name
-        return self.generate_compound_name(style_data)
-    
-    def choose_cultural_style(self, terrain):
-        """Choose cultural naming style based on terrain"""
-        preferences = self.name_data.get('terrain_cultural_preferences', {})
-        if terrain in preferences:
-            return random.choice(preferences[terrain])
-        return 'fantasy'  # Default fallback
-    
-    def generate_compound_name(self, style_data):
-        """Generate compound name from style data"""
-        patterns = style_data.get('patterns', ['prefix + suffix'])
-        pattern = random.choice(patterns)
-        
-        prefixes = style_data.get('prefixes', ['New'])
-        suffixes = style_data.get('suffixes', ['town'])
-        
-        if pattern == 'prefix + middle + suffix' and 'middle_parts' in style_data:
-            middle_parts = style_data['middle_parts']
-            return random.choice(prefixes) + random.choice(middle_parts) + random.choice(suffixes)
-        else:
-            # Default to prefix + suffix
-            return random.choice(prefixes) + random.choice(suffixes)
-    
-    def create_basic_name(self):
-        """Create basic fantasy name as fallback"""
-        prefixes = ["Gold", "Silver", "Stone", "River", "Green", "Iron"]
-        suffixes = ["vale", "ford", "wood", "haven", "ridge", "burg"]
-        return random.choice(prefixes) + random.choice(suffixes)
-    
-    def reset_used_names(self):
-        """Reset the used names set for a new world"""
-        self.used_names.clear()
+{
+  "cultural_naming_styles": {
+    "fantasy": {
+      "name": "Fantasy",
+      "description": "Generic fantasy settlement names",
+      "prefixes": [
+        "Gold", "Silver", "Stone", "River", "Green", "White", "Black", "Red",
+        "Blue", "Iron", "Crystal", "Shadow", "Bright", "Deep", "High", "New",
+        "Old", "North", "South", "East", "West", "Fair", "Dark", "Swift",
+        "Crow", "Eagle", "Wolf", "Bear", "Oak", "Pine", "Elm", "Ash"
+      ],
+      "suffixes": [
+        "vale", "ford", "bury", "wood", "haven", "marsh", "ridge", "brook",
+        "creek", "bridge", "gate", "mill", "hill", "dale", "moor", "glen",
+        "grove", "hollow", "meadow", "field", "spring", "well", "shore",
+        "coast", "bay", "cove", "point", "cross", "end", "view", "ton", "ham", 
+        "shire", "port", "hold", "keep", "burg", "stadt", "by", "thorpe", 
+        "wick", "worth", "stead", "fell", "hurst", "lea", "ley", "fold", 
+        "garth", "thwaite", "beck", "burn", "holm", "barrow", "mount", "peak", 
+        "crest", "height", "summit"
+      ],
+      "patterns": ["prefix + suffix"]
+    },
+    "norse": {
+      "name": "Norse/Viking",
+      "description": "Viking and Norse settlement naming traditions",
+      "prefixes": [
+        "Grim", "Thor", "Hrafn", "Bjorn", "Eirik", "Olaf", "Ragnar", "Leif",
+        "Gunnar", "Magnus", "Sigurd", "Harald", "Sven", "Knut", "Rolf", "Orm",
+        "Ulf", "Haki", "Hakon", "Ivar", "Ragnhild", "Astrid", "Ingvar", "Torkel"
+      ],
+      "suffixes": [
+        "by", "thorpe", "holm", "kirk", "vik", "stad", "toft", "thwaite",
+        "beck", "fell", "garth", "gill", "rigg", "scar", "force", "tarn"
+      ],
+      "patterns": ["prefix + suffix"]
+    },
+    "celtic": {
+      "name": "Celtic/Gaelic",
+      "description": "Celtic and Gaelic settlement naming traditions",
+      "prefixes": [
+        "Bal", "Dun", "Glen", "Kil", "Strath", "Ben", "Aber", "Ard", "Auch",
+        "Drum", "Inver", "Llan", "Pen", "Tre", "Caer", "Cwm", "Nant", "Pont"
+      ],
+      "suffixes": [
+        "dun", "glen", "more", "beg", "knock", "craig", "garth", "lyn", "bach",
+        "mawr", "fach", "wen", "goch", "las", "ddu", "newydd"
+      ],
+      "patterns": ["prefix + suffix"]
+    },
+    "germanic": {
+      "name": "Germanic",
+      "description": "Germanic settlement naming traditions",
+      "prefixes": [
+        "Berg", "Burg", "Wald", "Stein", "Adler", "Wolf", "Bar", "Eichen",
+        "Tannen", "Felsen", "Schnee", "Feuer", "Wasser", "Himmel", "Stern",
+        "Mond", "Sonne", "Sturm", "Donner", "Blitz"
+      ],
+      "suffixes": [
+        "berg", "burg", "wald", "heim", "dorf", "hausen", "fels", "thal",
+        "brunn", "bach", "au", "hof", "kirch", "mark", "rode", "stedt"
+      ],
+      "patterns": ["prefix + suffix"]
+    },
+    "anglo_saxon": {
+      "name": "Anglo-Saxon",
+      "description": "Anglo-Saxon settlement naming traditions",
+      "prefixes": [
+        "Aethel", "Wulf", "Ead", "Cyne", "Oswald", "Edgar", "Edmund", "Edward",
+        "Alfred", "Harold", "Godwin", "Leofric", "Aelfric", "Beorn", "Cnut"
+      ],
+      "suffixes": [
+        "ton", "ham", "worth", "ford", "burgh", "stead", "lea", "field", "well",
+        "hill", "wood", "thorpe", "by", "cot", "wick"
+      ],
+      "patterns": ["prefix + suffix"]
+    }
+  },
+  "terrain_cultural_preferences": {
+    "plains": ["fantasy", "anglo_saxon", "norse"],
+    "hills": ["celtic", "germanic", "fantasy"],
+    "mountains": ["germanic", "celtic", "fantasy"],
+    "forests": ["germanic", "celtic", "fantasy"],
+    "swamps": ["celtic", "fantasy"],
+    "deserts": ["fantasy"]
+  },
+  "unique_city_names": {
+    "fantasy": [
+      "Dragonspire", "Ironhold", "Crownhaven", "Goldthrone", "Silverspire",
+      "Crystalkeep", "Shadowheart", "Brightcrown", "Stormhold", "Flamekeep"
+    ],
+    "norse": [
+      "Thorsgard", "Valhalla", "Asgardheim", "Midgardburg", "Jormunvik"
+    ],
+    "celtic": [
+      "Caerdun", "Glenmorvat", "Duncarraig", "Strathallan", "Balmorven"
+    ],
+    "germanic": [
+      "Drachenburg", "Konigsheim", "Himmelsfels", "Sternenwald", "Donnerhall"
+    ],
+    "anglo_saxon": [
+      "Aethelburg", "Cynehall", "Eadweardston", "Godwinham", "Oswaldsfort"
+    ]
+  }
+}
