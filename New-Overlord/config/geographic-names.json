@@ -1,0 +1,142 @@
+{
+  "geographic_naming_styles": {
+    "fantasy": {
+      "plains": {
+        "prefixes": ["Golden", "Silver", "Green", "Wind", "Sun", "Moon", "Star", "Crystal", "Emerald", "Verdant"],
+        "suffixes": ["Plains", "Fields", "Meadows", "Grasslands", "Steppes", "Prairies", "Lands"]
+      },
+      "hills": {
+        "prefixes": ["Rolling", "Copper", "Iron", "Stone", "Jade", "Amber", "Ruby", "Misty", "Ancient", "Gentle"],
+        "suffixes": ["Hills", "Downs", "Heights", "Rises", "Knolls", "Ridges", "Uplands"]
+      },
+      "mountains": {
+        "prefixes": ["Iron", "Dragon", "Storm", "Frost", "Fire", "Shadow", "Crystal", "Bone", "Thunder", "Sky"],
+        "suffixes": ["Mountains", "Peaks", "Range", "Spine", "Crown", "Teeth", "Crags", "Spires"]
+      },
+      "forests": {
+        "prefixes": ["Dark", "Elder", "Whisper", "Ancient", "Deep", "Wild", "Mystic", "Shadow", "Moon", "Silver"],
+        "suffixes": ["Wood", "Forest", "Grove", "Thicket", "Weald", "Woodland", "Timberland"]
+      },
+      "swamps": {
+        "prefixes": ["Mist", "Shadow", "Black", "Thorn", "Poison", "Witch", "Murk", "Bog", "Marsh", "Fen"],
+        "suffixes": ["Marshes", "Swamps", "Bogs", "Fens", "Mires", "Wetlands", "Moors"]
+      },
+      "deserts": {
+        "prefixes": ["Burning", "Sun", "Red", "Gold", "Endless", "Shifting", "Crimson", "Bone", "Scorched", "Waste"],
+        "suffixes": ["Desert", "Sands", "Wastes", "Dunes", "Expanse", "Barrens", "Reaches"]
+      }
+    },
+    "norse": {
+      "plains": {
+        "prefixes": ["Grim", "Thor", "Odin", "Bjorn", "Ulf", "Raven", "Wolf", "Bear", "Eagle", "Storm"],
+        "suffixes": ["field", "meadow", "plain", "land", "stead", "garth", "mark"]
+      },
+      "hills": {
+        "prefixes": ["Troll", "Giant", "Dwarf", "Iron", "Stone", "Frost", "Wind", "Raven", "Wolf", "Bear"],
+        "suffixes": ["fell", "ridge", "height", "hill", "knoll", "rise", "down"]
+      },
+      "mountains": {
+        "prefixes": ["Frost", "Ice", "Storm", "Thunder", "Giant", "Troll", "Iron", "Stone", "Wind", "Sky"],
+        "suffixes": ["fjell", "berg", "peak", "spire", "horn", "tooth", "crag", "spine"]
+      },
+      "forests": {
+        "prefixes": ["Dark", "Deep", "Wild", "Wolf", "Bear", "Raven", "Troll", "Elder", "Ancient", "Grim"],
+        "suffixes": ["wood", "forest", "grove", "thicket", "weald", "skog", "mark"]
+      },
+      "swamps": {
+        "prefixes": ["Mist", "Bog", "Marsh", "Fen", "Mire", "Black", "Dark", "Troll", "Witch", "Dead"],
+        "suffixes": ["bog", "fen", "marsh", "mire", "moor", "wetland", "swamp"]
+      },
+      "deserts": {
+        "prefixes": ["Waste", "Barren", "Dead", "Dry", "Sun", "Sand", "Rock", "Stone", "Wind", "Empty"],
+        "suffixes": ["waste", "desert", "reach", "expanse", "barren", "land", "stead"]
+      }
+    },
+    "celtic": {
+      "plains": {
+        "prefixes": ["Glen", "Strath", "Cwm", "Aber", "Pen", "Tre", "Caer", "Dun", "Ard", "Bal"],
+        "suffixes": ["mawr", "beg", "glas", "gwyn", "ddu", "coch", "las", "fach", "fawr", "newydd"]
+      },
+      "hills": {
+        "prefixes": ["Ben", "Pen", "Drum", "Cnoc", "Tor", "Dun", "Ard", "Caer", "Carn", "Bryn"],
+        "suffixes": ["mor", "beg", "glas", "ddu", "gwyn", "coch", "fach", "fawr", "uchel", "isel"]
+      },
+      "mountains": {
+        "prefixes": ["Ben", "Pen", "Carn", "Sgurr", "Beinn", "Cnoc", "Tor", "Craig", "Creag", "Sliabh"],
+        "suffixes": ["mor", "dubh", "geal", "ruadh", "bhan", "dearg", "glas", "liath", "ard", "uchel"]
+      },
+      "forests": {
+        "prefixes": ["Coill", "Derry", "Kil", "Glen", "Strath", "Cwm", "Coed", "Llwyn", "Gelli", "Pren"],
+        "suffixes": ["mor", "beg", "glas", "ddu", "gwyn", "werdd", "fach", "fawr", "hen", "newydd"]
+      },
+      "swamps": {
+        "prefixes": ["Cors", "Mign", "Pwll", "Llyn", "Gwaun", "Rhos", "Moor", "Bog", "Fen", "Mire"],
+        "suffixes": ["bach", "mawr", "ddu", "glas", "llwyd", "gwyrdd", "brown", "coch", "gwyn", "tywyll"]
+      },
+      "deserts": {
+        "prefixes": ["Anial", "Diffaith", "Sych", "Cras", "Llwm", "Noeth", "Gwag", "Pell", "Unig", "Mud"],
+        "suffixes": ["dir", "tir", "gwlad", "maes", "gwaun", "rhos", "mynydd", "bryn", "dolydd", "erwau"]
+      }
+    },
+    "germanic": {
+      "plains": {
+        "prefixes": ["Gold", "Silber", "Grün", "Weit", "Breit", "Flach", "Weit", "Groß", "Klein", "Neu"],
+        "suffixes": ["feld", "land", "wiese", "ebene", "flur", "grund", "au", "mark", "gau", "heim"]
+      },
+      "hills": {
+        "prefixes": ["Hügel", "Berg", "Höh", "Stein", "Fels", "Hoch", "Nieder", "Alt", "Jung", "Grün"],
+        "suffixes": ["hügel", "berg", "höhe", "kuppe", "kamm", "rücken", "hang", "rand", "kopf", "spitze"]
+      },
+      "mountains": {
+        "prefixes": ["Hoch", "Groß", "Alt", "Neu", "Stein", "Fels", "Schnee", "Eis", "Donner", "Sturm"],
+        "suffixes": ["berg", "gebirge", "gipfel", "spitze", "horn", "zacke", "kamm", "massiv", "kette", "wall"]
+      },
+      "forests": {
+        "prefixes": ["Dunkel", "Tief", "Wild", "Alt", "Groß", "Klein", "Schwarz", "Grün", "Dicht", "Finster"],
+        "suffixes": ["wald", "forst", "holz", "hain", "gehölz", "dickicht", "busch", "grund", "bruch", "au"]
+      },
+      "swamps": {
+        "prefixes": ["Sumpf", "Moor", "Bruch", "Ried", "Moos", "Feucht", "Nass", "Tief", "Dunkel", "Wild"],
+        "suffixes": ["sumpf", "moor", "bruch", "ried", "moos", "grund", "land", "au", "wiese", "feld"]
+      },
+      "deserts": {
+        "prefixes": ["Wüst", "Dürr", "Trocken", "Sand", "Stein", "Öd", "Leer", "Kahl", "Brenn", "Heiß"],
+        "suffixes": ["wüste", "öde", "sand", "land", "feld", "grund", "mark", "gau", "heim", "reich"]
+      }
+    },
+    "anglo_saxon": {
+      "plains": {
+        "prefixes": ["Broad", "Wide", "Green", "Fair", "Rich", "Golden", "Silver", "Sweet", "Good", "Great"],
+        "suffixes": ["field", "land", "mead", "lea", "stead", "ham", "ton", "worth", "ford", "wick"]
+      },
+      "hills": {
+        "prefixes": ["High", "Low", "Green", "White", "Red", "Brown", "Grey", "Old", "New", "Fair"],
+        "suffixes": ["down", "hill", "ridge", "height", "rise", "fell", "knoll", "mount", "head", "top"]
+      },
+      "mountains": {
+        "prefixes": ["High", "Great", "Old", "White", "Grey", "Black", "Red", "Stone", "Iron", "Cold"],
+        "suffixes": ["fell", "pike", "crag", "scar", "edge", "head", "top", "mount", "peak", "height"]
+      },
+      "forests": {
+        "prefixes": ["Great", "Old", "Deep", "Dark", "Wild", "Green", "Fair", "Sweet", "Thick", "Dense"],
+        "suffixes": ["wood", "forest", "chase", "weald", "grove", "copse", "shaw", "holt", "hurst", "frith"]
+      },
+      "swamps": {
+        "prefixes": ["Wet", "Bog", "Marsh", "Fen", "Mire", "Black", "Dark", "Deep", "Wild", "Foul"],
+        "suffixes": ["marsh", "bog", "fen", "mire", "carr", "moss", "moor", "slough", "mere", "pool"]
+      },
+      "deserts": {
+        "prefixes": ["Waste", "Bare", "Dry", "Dead", "Empty", "Barren", "Wild", "Rough", "Hard", "Stone"],
+        "suffixes": ["waste", "heath", "moor", "down", "field", "land", "stead", "worth", "ham", "ton"]
+      }
+    }
+  },
+  "terrain_cultural_preferences": {
+    "plains": ["fantasy", "anglo_saxon", "germanic"],
+    "hills": ["celtic", "anglo_saxon", "fantasy"],
+    "mountains": ["germanic", "norse", "celtic"],
+    "forests": ["germanic", "celtic", "fantasy"],
+    "swamps": ["celtic", "fantasy", "anglo_saxon"],
+    "deserts": ["fantasy", "anglo_saxon"]
+  }
+}
