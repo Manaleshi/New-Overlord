@@ -1,90 +1,4 @@
-updateHexInfo(x, y) {
-        const hexId = `${x},${y}`;
-        const hexData = this.hexes[hexId];
-        const infoElement = document.getElementById('hex-info');
-        
-        if (!hexData || !infoElement) return;
-        
-        const terrain = this.terrainTypes[hexData.terrain];
-        const locationId = hexData.location_id || 'L????';
-        const geographicName = hexData.geographic_name || 'Unknown Region';
-        
-        let infoHtml = `
-            <h4>${geographicName} [${locationId}]</h4>
-            <p><strong>Terrain:</strong> ${terrain ? terrain.name : 'Unknown'}</p>
-            <p><strong>Coordinates:</strong> (${x}, ${y})</p>
-            <p><strong>Resources:</strong> ${hexData.resources ? hexData.resources.join(', ') : 'None'}</p>
-        `;
-        
-        if (hexData.population_center) {
-            infoHtml += `
-                <p><strong>Settlement:</strong> ${hexData.population_center.name || 'Unnamed'}</p>
-                <p><strong>Type:</strong> ${hexData.population_center.type || 'village'}</p>
-                <p><strong>Population:</strong> ${hexData.population_center.population || 500}</p>
-            `;
-        }
-        
-        // Add movement directions section
-        infoHtml += '<div class="movement-info"><h5>Directions</h5><div id="movement-directions">Loading movement data...</div></div>';
-        
-        // Add terrain editing section
-        infoHtml += '<div class="terrain-editing"><h5>Terrain Editing</h5><div class="terrain-buttons">';
-        Object.entries(this.terrainTypes).forEach(([key, terrain]) => {
-            infoHtml += `<button class="btn btn-small terrain-btn" data-terrain="${key}" style="background-color: ${terrain.color};">${terrain.name}</button>`;
-        });
-        infoHtml += '</div></div>';
-        
-        infoElement.innerHTML = infoHtml;
-        
-        // Add event listeners for terrain buttons
-        infoElement.querySelectorAll('.terrain-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                this.changeHexTerrain(x, y, btn.dataset.terrain);
-            });
-        });
-        
-    displayMovementDirections(directions) {
-        const container = document.getElementById('movement-directions');
-        if (!container) return;
-        
-        if (!directions || directions.length === 0) {
-            container.innerHTML = '<p>No adjacent areas available.</p>';
-            return;
-        }
-        
-        let html = '';
-        directions.forEach(dir => {
-            const walking = dir.movement.walking;
-            const riding = dir.movement.riding;
-            const flying = dir.movement.flying;
-            
-            html += `<div class="direction-item">`;
-            html += `<strong>${dir.direction}</strong>, to ${dir.target_name} [${dir.target_id}], ${dir.target_terrain}<br>`;
-            
-            if (walking.impassable) {
-                html += `<span class="impassable">Impassable</span>`;
-                if (walking.requirements && walking.requirements.length > 0) {
-                    html += ` (requires ${walking.requirements.join(' or ')})`;
-                }
-            } else {
-                html += `Walking: ${walking.min_days}-${walking.max_days} days`;
-                if (riding.min_days !== walking.min_days) {
-                    html += `, Riding: ${riding.min_days}-${riding.max_days} days`;
-                }
-                html += `, Flying: ${flying.min_days} days`;
-            }
-            html += `</div>`;
-        });
-        
-        container.innerHTML = html;
-    }
-    
-    displayMovementError() {
-        const container = document.getElementById('movement-directions');
-        if (container) {
-            container.innerHTML = '<p>Failed to load movement data.</p>';
-        }
-    }/**
+/**
  * HexMap - Interactive hex grid display and manipulation
  */
 class HexMap {
@@ -319,6 +233,9 @@ class HexMap {
             `;
         }
         
+        // Add movement directions section
+        infoHtml += '<div class="movement-info"><h5>Directions</h5><div id="movement-directions">Loading movement data...</div></div>';
+        
         // Add terrain editing section
         infoHtml += '<div class="terrain-editing"><h5>Terrain Editing</h5><div class="terrain-buttons">';
         Object.entries(this.terrainTypes).forEach(([key, terrain]) => {
@@ -334,9 +251,75 @@ class HexMap {
                 this.changeHexTerrain(x, y, btn.dataset.terrain);
             });
         });
-    }.dataset.terrain);
+        
+        // Load movement data
+        this.loadMovementData(x, y);
+    }
+    
+    async loadMovementData(x, y) {
+        try {
+            const worldData = this.getWorldData();
+            const response = await fetch(`/api/hex-movement/${x}/${y}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(worldData)
             });
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.displayMovementDirections(data.directions);
+            } else {
+                this.displayMovementError();
+            }
+        } catch (error) {
+            console.error('Failed to load movement data:', error);
+            this.displayMovementError();
+        }
+    }
+    
+    displayMovementDirections(directions) {
+        const container = document.getElementById('movement-directions');
+        if (!container) return;
+        
+        if (!directions || directions.length === 0) {
+            container.innerHTML = '<p>No adjacent areas available.</p>';
+            return;
+        }
+        
+        let html = '';
+        directions.forEach(dir => {
+            const walking = dir.movement.walking;
+            const riding = dir.movement.riding;
+            const flying = dir.movement.flying;
+            
+            html += '<div class="direction-item">';
+            html += `<strong>${dir.direction}</strong>, to ${dir.target_name} [${dir.target_id}], ${dir.target_terrain}<br>`;
+            
+            if (walking.impassable) {
+                html += '<span class="impassable">Impassable</span>';
+                if (walking.requirements && walking.requirements.length > 0) {
+                    html += ` (requires ${walking.requirements.join(' or ')})`;
+                }
+            } else {
+                html += `Walking: ${walking.min_days}-${walking.max_days} days`;
+                if (riding.min_days !== walking.min_days) {
+                    html += `, Riding: ${riding.min_days}-${riding.max_days} days`;
+                }
+                html += `, Flying: ${flying.min_days} days`;
+            }
+            html += '</div>';
         });
+        
+        container.innerHTML = html;
+    }
+    
+    displayMovementError() {
+        const container = document.getElementById('movement-directions');
+        if (container) {
+            container.innerHTML = '<p>Failed to load movement data.</p>';
+        }
     }
     
     changeHexTerrain(x, y, newTerrain) {
