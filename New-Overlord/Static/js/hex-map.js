@@ -215,9 +215,13 @@ class HexMap {
         if (!hexData || !infoElement) return;
         
         const terrain = this.terrainTypes[hexData.terrain];
+        const locationId = hexData.location_id || 'L????';
+        const geographicName = hexData.geographic_name || 'Unknown Region';
+        
         let infoHtml = `
-            <h4>Hex (${x}, ${y})</h4>
+            <h4>${geographicName} [${locationId}]</h4>
             <p><strong>Terrain:</strong> ${terrain ? terrain.name : 'Unknown'}</p>
+            <p><strong>Coordinates:</strong> (${x}, ${y})</p>
             <p><strong>Resources:</strong> ${hexData.resources ? hexData.resources.join(', ') : 'None'}</p>
         `;
         
@@ -229,12 +233,12 @@ class HexMap {
             `;
         }
         
-        // Add terrain editing buttons
-        infoHtml += '<div class="terrain-buttons">';
+        // Add terrain editing section
+        infoHtml += '<div class="terrain-editing"><h5>Terrain Editing</h5><div class="terrain-buttons">';
         Object.entries(this.terrainTypes).forEach(([key, terrain]) => {
             infoHtml += `<button class="btn btn-small terrain-btn" data-terrain="${key}" style="background-color: ${terrain.color};">${terrain.name}</button>`;
         });
-        infoHtml += '</div>';
+        infoHtml += '</div></div>';
         
         infoElement.innerHTML = infoHtml;
         
@@ -242,6 +246,9 @@ class HexMap {
         infoElement.querySelectorAll('.terrain-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 this.changeHexTerrain(x, y, btn.dataset.terrain);
+            });
+        });
+    }.dataset.terrain);
             });
         });
     }
