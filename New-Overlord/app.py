@@ -32,7 +32,7 @@ class MovementCalculator:
             "distance_variation": {"adjacent_hex": {"min_bonus": 0, "max_bonus": 3}}
         }
     
-    def calculate_movement_time(self, from_terrain, to_terrain, movement_type="walking"):
+    def calculate_movement_time(self, from_terrain, to_terrain, movement_type="walking", from_coords=None, to_coords=None):
         if not self.movement_data:
             self.use_basic_movement_data()
         
@@ -42,7 +42,7 @@ class MovementCalculator:
         
         if not to_data.get("passable", True):
             return {
-                "min_days": None, "max_days": None, "impassable": True,
+                "days": None, "impassable": True,
                 "reason": f"Impassable terrain: {to_terrain}",
                 "requirements": to_data.get("special_requirements", [])
             }
@@ -56,14 +56,22 @@ class MovementCalculator:
         base_min = exit_time + enter_time + min_distance
         base_max = exit_time + enter_time + max_distance
         
-        if movement_type == "flying":
-            return {"min_days": 4, "max_days": 4, "impassable": False, "movement_type": "flying"}
-        elif movement_type == "riding":
-            ride_min = max(1, int(base_min * 0.67))
-            ride_max = max(1, int(base_max * 0.67))
-            return {"min_days": ride_min, "max_days": ride_max, "impassable": False, "movement_type": "riding"}
+        # Calculate specific travel time (deterministic based on coordinates)
+        if from_coords and to_coords:
+            seed = hash(f"{from_coords[0]},{from_coords[1]}-{to_coords[0]},{to_coords[1]}") % 1000
+            variation = seed % (base_max - base_min + 1)
+            specific_time = base_min + variation
         else:
-            return {"min_days": base_min, "max_days": base_max, "impassable": False, "movement_type": "walking"}
+            # Fallback to middle of range if no coordinates
+            specific_time = (base_min + base_max) // 2
+        
+        if movement_type == "flying":
+            return {"days": 4, "impassable": False, "movement_type": "flying"}
+        elif movement_type == "riding":
+            ride_time = max(1, int(specific_time * 0.67))
+            return {"days": ride_time, "impassable": False, "movement_type": "riding"}
+        else:
+            return {"days": specific_time, "impassable": False, "movement_type": "walking"}
     
     def get_hex_neighbors(self, x, y, width, height):
         neighbors = []
@@ -117,9 +125,10 @@ class MovementCalculator:
                 target_name = neighbor_hex.get("geographic_name", f"{target_terrain.title()} Region")
                 target_id = neighbor_hex.get("location_id", "L????")
                 
-                walking = self.calculate_movement_time(current_terrain, target_terrain, "walking")
-                riding = self.calculate_movement_time(current_terrain, target_terrain, "riding") 
-                flying = self.calculate_movement_time(current_terrain, target_terrain, "flying")
+                # Pass coordinates for deterministic travel times
+                walking = self.calculate_movement_time(current_terrain, target_terrain, "walking", [x, y], [nx, ny])
+                riding = self.calculate_movement_time(current_terrain, target_terrain, "riding", [x, y], [nx, ny]) 
+                flying = self.calculate_movement_time(current_terrain, target_terrain, "flying", [x, y], [nx, ny])
                 
                 directions.append({
                     "direction": direction, "target_name": target_name, "target_id": target_id,
@@ -130,7 +139,7 @@ class MovementCalculator:
         direction_order = ["North", "Northeast", "Southeast", "South", "Southwest", "Northwest"]
         directions.sort(key=lambda d: direction_order.index(d["direction"]) if d["direction"] in direction_order else 99)
         return directions
-
+        
 # Geographic Name Generator Class
 class GeographicNameGenerator:
     def __init__(self, config_dir='config'):
