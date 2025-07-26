@@ -4,6 +4,133 @@ import os
 import random
 from datetime import datetime
 
+# Movement Calculator Class
+class MovementCalculator:
+    def __init__(self, config_dir='config'):
+        self.config_dir = config_dir
+        self.movement_data = None
+        self.load_movement_data()
+    
+    def load_movement_data(self):
+        try:
+            filepath = os.path.join(self.config_dir, 'movement-system.json')
+            with open(filepath, 'r') as f:
+                self.movement_data = json.load(f)
+        except FileNotFoundError:
+            self.use_basic_movement_data()
+    
+    def use_basic_movement_data(self):
+        self.movement_data = {
+            "terrain_movement_costs": {
+                "plains": {"base_exit_time": 2, "base_enter_time": 2, "passable": True},
+                "hills": {"base_exit_time": 4, "base_enter_time": 4, "passable": True},
+                "mountains": {"base_exit_time": 8, "base_enter_time": 8, "passable": False},
+                "forests": {"base_exit_time": 5, "base_enter_time": 5, "passable": True},
+                "swamps": {"base_exit_time": 7, "base_enter_time": 7, "passable": True},
+                "deserts": {"base_exit_time": 6, "base_enter_time": 6, "passable": True}
+            },
+            "distance_variation": {"adjacent_hex": {"min_bonus": 0, "max_bonus": 3}}
+        }
+    
+    def calculate_movement_time(self, from_terrain, to_terrain, movement_type="walking"):
+        if not self.movement_data:
+            self.use_basic_movement_data()
+        
+        terrain_costs = self.movement_data["terrain_movement_costs"]
+        from_data = terrain_costs.get(from_terrain, terrain_costs["plains"])
+        to_data = terrain_costs.get(to_terrain, terrain_costs["plains"])
+        
+        if not to_data.get("passable", True):
+            return {
+                "min_days": None, "max_days": None, "impassable": True,
+                "reason": f"Impassable terrain: {to_terrain}",
+                "requirements": to_data.get("special_requirements", [])
+            }
+        
+        exit_time = from_data["base_exit_time"]
+        enter_time = to_data["base_enter_time"]
+        distance_var = self.movement_data.get("distance_variation", {}).get("adjacent_hex", {})
+        min_distance = distance_var.get("min_bonus", 0)
+        max_distance = distance_var.get("max_bonus", 3)
+        
+        base_min = exit_time + enter_time + min_distance
+        base_max = exit_time + enter_time + max_distance
+        
+        if movement_type == "flying":
+            return {"min_days": 4, "max_days": 4, "impassable": False, "movement_type": "flying"}
+        elif movement_type == "riding":
+            ride_min = max(1, int(base_min * 0.67))
+            ride_max = max(1, int(base_max * 0.67))
+            return {"min_days": ride_min, "max_days": ride_max, "impassable": False, "movement_type": "riding"}
+        else:
+            return {"min_days": base_min, "max_days": base_max, "impassable": False, "movement_type": "walking"}
+    
+    def get_hex_neighbors(self, x, y, width, height):
+        neighbors = []
+        if y % 2 == 0:  # Even row
+            potential = [(x-1, y), (x+1, y), (x, y-1), (x+1, y-1), (x, y+1), (x+1, y+1)]
+        else:  # Odd row  
+            potential = [(x-1, y), (x+1, y), (x-1, y-1), (x, y-1), (x-1, y+1), (x, y+1)]
+        
+        for nx, ny in potential:
+            if 0 <= nx < width and 0 <= ny < height:
+                neighbors.append((nx, ny))
+        return neighbors
+    
+    def get_direction_name(self, from_x, from_y, to_x, to_y):
+        dx = to_x - from_x
+        dy = to_y - from_y
+        
+        if from_y % 2 == 1:  # Odd row
+            if dx == 0 and dy == -1: return "North"
+            elif dx == 1 and dy == -1: return "Northeast" 
+            elif dx == 1 and dy == 0: return "Southeast"
+            elif dx == 0 and dy == 1: return "South"
+            elif dx == -1 and dy == 1: return "Southwest"
+            elif dx == -1 and dy == 0: return "Northwest"
+        else:  # Even row
+            if dx == 0 and dy == -1: return "North"
+            elif dx == 1 and dy == -1: return "Northeast"
+            elif dx == 1 and dy == 0: return "Southeast" 
+            elif dx == 0 and dy == 1: return "South"
+            elif dx == -1 and dy == 1: return "Southwest"
+            elif dx == -1 and dy == 0: return "Northwest"
+        return "Unknown"
+    
+    def calculate_all_directions(self, x, y, world_data):
+        width = world_data["metadata"]["size"]["width"]
+        height = world_data["metadata"]["size"]["height"]
+        current_hex = world_data["hexes"].get(f"{x},{y}")
+        
+        if not current_hex:
+            return []
+        
+        current_terrain = current_hex["terrain"]
+        neighbors = self.get_hex_neighbors(x, y, width, height)
+        directions = []
+        
+        for nx, ny in neighbors:
+            neighbor_hex = world_data["hexes"].get(f"{nx},{ny}")
+            if neighbor_hex:
+                direction = self.get_direction_name(x, y, nx, ny)
+                target_terrain = neighbor_hex["terrain"]
+                target_name = neighbor_hex.get("geographic_name", f"{target_terrain.title()} Region")
+                target_id = neighbor_hex.get("location_id", "L????")
+                
+                walking = self.calculate_movement_time(current_terrain, target_terrain, "walking")
+                riding = self.calculate_movement_time(current_terrain, target_terrain, "riding") 
+                flying = self.calculate_movement_time(current_terrain, target_terrain, "flying")
+                
+                directions.append({
+                    "direction": direction, "target_name": target_name, "target_id": target_id,
+                    "target_terrain": target_terrain, "coordinates": [nx, ny],
+                    "movement": {"walking": walking, "riding": riding, "flying": flying}
+                })
+        
+        direction_order = ["North", "Northeast", "Southeast", "South", "Southwest", "Northwest"]
+        directions.sort(key=lambda d: direction_order.index(d["direction"]) if d["direction"] in direction_order else 99)
+        return directions
+
 # Geographic Name Generator Class
 class GeographicNameGenerator:
     def __init__(self, config_dir='config'):
@@ -367,6 +494,22 @@ def get_geographic_names():
             }
         }
         return jsonify(default_names)
+
+@app.route('/api/hex-movement/<int:x>/<int:y>', methods=['POST'])
+def get_hex_movement(x, y):
+    """Get movement information for a specific hex"""
+    try:
+        world_data = request.json
+        if not world_data:
+            return jsonify({"error": "World data required"}), 400
+        
+        movement_calc = MovementCalculator(CONFIG_DIR)
+        directions = movement_calc.calculate_all_directions(x, y, world_data)
+        
+        return jsonify({"directions": directions})
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/generate-world', methods=['POST'])
 def generate_world():
