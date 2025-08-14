@@ -14,33 +14,41 @@ os.makedirs('worlds', exist_ok=True)
 
 def get_hex_neighbors(x, y, width, height, wrap_east_west=True):
     """
-    Get the 6 neighbors of a hex using proper hexagonal coordinates.
-    Returns dict with direction names as keys and (x, y) coordinates as values.
+    Correct hex neighbors for POINTY-TOP hexagonal layout
     
-    Proper hex directions: N, NE, SE, S, SW, NW
+    Layout looks like:
+         0    
+    0         0
+         0
+    0         0
+         0
+    
+    In this system:
+    - Even COLUMNS (x=0,2,4...) are shifted down by half a hex
+    - Odd COLUMNS (x=1,3,5...) are at normal height
     """
     neighbors = {}
     
-    # In a hexagonal grid, neighbor offsets depend on whether the row is even or odd
-    # This is the "offset coordinate" system for hexagonal grids
-    
-    if y % 2 == 0:  # Even rows
+    # For pointy-top hexagons with column-based offset
+    if x % 2 == 0:  # Even columns (0, 2, 4, ...)
+        # Even columns are shifted DOWN
         offsets = {
-            'N':  (0, -1),   # North
-            'NE': (1, -1),   # Northeast  
-            'SE': (1, 0),    # Southeast
-            'S':  (0, 1),    # South
-            'SW': (-1, 0),   # Southwest
-            'NW': (-1, -1)   # Northwest
+            'N':  (0, -1),   # North: same column, up
+            'NE': (1, -1),   # Northeast: right column, up  
+            'SE': (1, 0),    # Southeast: right column, same row
+            'S':  (0, 1),    # South: same column, down
+            'SW': (-1, 0),   # Southwest: left column, same row
+            'NW': (-1, -1)   # Northwest: left column, up
         }
-    else:  # Odd rows
+    else:  # Odd columns (1, 3, 5, ...)
+        # Odd columns are at normal height
         offsets = {
-            'N':  (0, -1),   # North
-            'NE': (1, 0),    # Northeast
-            'SE': (1, 1),    # Southeast  
-            'S':  (0, 1),    # South
-            'SW': (-1, 1),   # Southwest
-            'NW': (-1, 0)    # Northwest
+            'N':  (0, -1),   # North: same column, up
+            'NE': (1, 0),    # Northeast: right column, same row
+            'SE': (1, 1),    # Southeast: right column, down  
+            'S':  (0, 1),    # South: same column, down
+            'SW': (-1, 1),   # Southwest: left column, down
+            'NW': (-1, 0)    # Northwest: left column, same row
         }
     
     for direction, (dx, dy) in offsets.items():
@@ -66,7 +74,6 @@ def get_hex_neighbors(x, y, width, height, wrap_east_west=True):
         neighbors[direction] = (new_x, new_y)
     
     return neighbors
-
 
 class MovementCalculator:
     def __init__(self):
@@ -567,4 +574,5 @@ def get_hex_movement(x, y):
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
