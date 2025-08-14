@@ -28,16 +28,24 @@ class HexMap {
     }
     
     calculateHexPosition(x, y) {
-        /**
-         * Calculate proper hexagonal grid positions
-         * In a hex grid, odd rows are offset by half a hex width
-         */
-        const offsetX = (y % 2) * (this.hexSpacing / 2);
-        const posX = x * this.hexSpacing + offsetX + this.hexSize;
-        const posY = y * (this.hexSpacing * 0.75) + this.hexSize;
-        
-        return { x: posX, y: posY };
-    }
+    /**
+     * Calculate positions for POINTY-TOP hexagonal layout
+     * 
+     * In this layout:
+     * - Hexes are arranged in columns
+     * - Even columns (x=0,2,4...) are shifted DOWN by half a hex height
+     * - Odd columns (x=1,3,5...) are at normal position
+     */
+    
+    // Base position
+    const posX = x * (this.hexSpacing * 0.75) + this.hexSize;
+    
+    // Offset for even columns (shift down)
+    const offsetY = (x % 2) * (this.hexSpacing / 2);
+    const posY = y * this.hexSpacing + offsetY + this.hexSize;
+    
+    return { x: posX, y: posY };
+}
     
     loadWorld(worldData) {
         this.worldData = worldData;
