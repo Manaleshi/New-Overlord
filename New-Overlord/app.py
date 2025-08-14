@@ -13,12 +13,24 @@ os.makedirs('config', exist_ok=True)
 os.makedirs('worlds', exist_ok=True)
 
 def get_hex_neighbors(x, y, width, height, wrap_east_west=True):
-   
+    """
+    Hex neighbors for VERTICAL COLUMN layout.
+    
+    Layout looks like vertical columns with odd columns shifted down:
+    hex     hex
+      hex     hex  
+    hex     hex
+      hex     hex
+    hex     hex
+    
+    This uses "odd-q" offset coordinates where:
+    - Even columns (x=0,2,4...) are at normal position
+    - Odd columns (x=1,3,5...) are shifted DOWN by half a hex
+    """
     
     neighbors = {}
     
-    if x % 2 == 0:  # Even columns (0, 2, 4, ...)
-        # Even columns: NW and NE stay in same row
+    if x % 2 == 0:  # Even columns
         offsets = {
             'N':  (0, -1),   # North: same column, row up
             'NE': (1, -1),   # Northeast: right column, row up
@@ -27,8 +39,7 @@ def get_hex_neighbors(x, y, width, height, wrap_east_west=True):
             'SW': (-1, 0),   # Southwest: left column, same row
             'NW': (-1, -1)   # Northwest: left column, row up
         }
-    else:  # Odd columns (1, 3, 5, ...)
-        # Odd columns are shifted DOWN: NE and NW go to same row
+    else:  # Odd columns
         offsets = {
             'N':  (0, -1),   # North: same column, row up
             'NE': (1, 0),    # Northeast: right column, same row
@@ -61,6 +72,7 @@ def get_hex_neighbors(x, y, width, height, wrap_east_west=True):
         neighbors[direction] = (new_x, new_y)
     
     return neighbors
+
 
 class MovementCalculator:
     def __init__(self):
@@ -560,8 +572,6 @@ def get_hex_movement(x, y):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
-
-
-
-
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
