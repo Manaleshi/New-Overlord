@@ -2,30 +2,30 @@
  * HexMap - Interactive hex grid display and manipulation
  */
 class HexMap {
-    constructor(containerId) {
-        this.container = document.getElementById(containerId);
-        this.worldData = null;
-        this.selectedHex = null;
-        
-        // Hex display constants for vertical layout
-        this.hexSize = 40;
-        this.hexSpacing = 45;
-        
-        // Proper hexagonal directions in display order
-        this.directionOrder = ['N', 'NE', 'SE', 'S', 'SW', 'NW'];
-        this.directionNames = {
-            'N': 'North',
-            'NE': 'Northeast', 
-            'SE': 'Southeast',
-            'S': 'South',
-            'SW': 'Southwest',
-            'NW': 'Northwest'
-        };
-        
-        // Edit mode state
-        this.editMode = false;
-        this.editTerrain = null;
-    }
+constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    this.worldData = null;
+    this.selectedHex = null;
+    
+    // Hex display constants for vertical layout - BIGGER HEXES
+    this.hexSize = 50;      // Increased from 40
+    this.hexSpacing = 55;   // Increased from 45
+    
+    // Proper hexagonal directions in display order
+    this.directionOrder = ['N', 'NE', 'SE', 'S', 'SW', 'NW'];
+    this.directionNames = {
+        'N': 'North',
+        'NE': 'Northeast', 
+        'SE': 'Southeast',
+        'S': 'South',
+        'SW': 'Southwest',
+        'NW': 'Northwest'
+    };
+    
+    // Edit mode state
+    this.editMode = false;
+    this.editTerrain = null;
+}
     
     calculateHexPosition(x, y) {
         /**
