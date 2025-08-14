@@ -21,6 +21,10 @@ class HexMap {
             'SW': 'Southwest',
             'NW': 'Northwest'
         };
+        
+        // Edit mode state
+        this.editMode = false;
+        this.editTerrain = null;
     }
     
     calculateHexPosition(x, y) {
@@ -46,8 +50,8 @@ class HexMap {
         const { width, height } = this.worldData.metadata.size;
         
         // Calculate container size for proper hex layout
-        const containerWidth = width * this.hexSpacing + this.hexSpacing;
-        const containerHeight = height * (this.hexSpacing * 0.75) + this.hexSpacing;
+        const containerWidth = width * this.hexSpacing + this.hexSpacing + 100;
+        const containerHeight = height * (this.hexSpacing * 0.75) + this.hexSpacing + 100;
         
         this.container.innerHTML = '';
         this.container.style.width = `${containerWidth}px`;
@@ -83,7 +87,13 @@ class HexMap {
         hexElement.dataset.y = y;
         
         // Add click handler
-        hexElement.addEventListener('click', () => this.selectHex(x, y));
+        hexElement.addEventListener('click', (e) => {
+            if (this.editMode) {
+                this.handleTerrainEdit(e);
+            } else {
+                this.selectHex(x, y);
+            }
+        });
         
         // Add hex content
         const content = document.createElement('div');
@@ -129,9 +139,13 @@ class HexMap {
                 this.updateHexInfoPanel(hexData, movementData.directions);
             } else {
                 console.error('Error loading movement data:', movementData.error);
+                // Fallback to basic display without movement
+                this.updateHexInfoPanel(hexData, {});
             }
         } catch (error) {
             console.error('Error fetching movement data:', error);
+            // Fallback to basic display without movement
+            this.updateHexInfoPanel(hexData, {});
         }
     }
     
@@ -157,33 +171,37 @@ class HexMap {
         // Build directions info with proper hex directions
         let directionsHtml = '<div class="directions"><h4>Directions:</h4>';
         
-        for (const direction of this.directionOrder) {
-            if (directions[direction]) {
-                const dirData = directions[direction];
-                const directionName = this.directionNames[direction];
-                
-                if (dirData.movement.walking === 'impassable') {
-                    directionsHtml += `
-                        <div class="direction">
-                            <strong>${directionName}</strong>, to ${dirData.destination}, ${dirData.terrain} 
-                            <span class="impassable">Impassable</span>
-                            ${dirData.movement.note ? ` (${dirData.movement.note})` : ''}
-                        </div>
-                    `;
-                } else {
-                    // Show specific calculated times
-                    const walkTime = dirData.movement.walking;
-                    const rideTime = dirData.movement.riding;
-                    const flyTime = dirData.movement.flying;
+        if (Object.keys(directions).length > 0) {
+            for (const direction of this.directionOrder) {
+                if (directions[direction]) {
+                    const dirData = directions[direction];
+                    const directionName = this.directionNames[direction];
                     
-                    directionsHtml += `
-                        <div class="direction">
-                            <strong>${directionName}</strong>, to ${dirData.destination} [${dirData.location_id || 'Unknown'}], ${dirData.terrain}
-                            <br>&nbsp;&nbsp;&nbsp;&nbsp;Walking: ${walkTime} days, Riding: ${rideTime} days, Flying: ${flyTime} days
-                        </div>
-                    `;
+                    if (dirData.movement.walking === 'impassable') {
+                        directionsHtml += `
+                            <div class="direction">
+                                <strong>${directionName}</strong>, to ${dirData.destination}, ${dirData.terrain} 
+                                <span class="impassable">Impassable</span>
+                                ${dirData.movement.note ? ` (${dirData.movement.note})` : ''}
+                            </div>
+                        `;
+                    } else {
+                        // Show specific calculated times
+                        const walkTime = dirData.movement.walking;
+                        const rideTime = dirData.movement.riding;
+                        const flyTime = dirData.movement.flying;
+                        
+                        directionsHtml += `
+                            <div class="direction">
+                                <strong>${directionName}</strong>, to ${dirData.destination} [${dirData.location_id || 'Unknown'}], ${dirData.terrain}
+                                <br>&nbsp;&nbsp;&nbsp;&nbsp;Walking: ${walkTime} days, Riding: ${rideTime} days, Flying: ${flyTime} days
+                            </div>
+                        `;
+                    }
                 }
             }
+        } else {
+            directionsHtml += '<div class="direction">Movement data not available</div>';
         }
         directionsHtml += '</div>';
         
@@ -206,15 +224,18 @@ class HexMap {
         this.editTerrain = terrainType;
         this.container.style.cursor = 'crosshair';
         
-        // Add click handlers for terrain editing
-        const hexes = this.container.querySelectorAll('.hex');
-        hexes.forEach(hex => {
-            hex.addEventListener('click', this.handleTerrainEdit.bind(this));
-        });
+        // Update edit mode indicator
+        const editIndicator = document.getElementById('edit-mode-indicator');
+        if (editIndicator) {
+            editIndicator.textContent = `Edit Mode: ${terrainType}`;
+            editIndicator.style.display = 'block';
+        }
+        
+        console.log(`Edit mode enabled for terrain: ${terrainType}`);
     }
     
     handleTerrainEdit(event) {
-        if (!this.editMode) return;
+        if (!this.editMode || !this.editTerrain) return;
         
         const hex = event.currentTarget;
         const x = parseInt(hex.dataset.x);
@@ -222,27 +243,81 @@ class HexMap {
         
         // Update terrain in data
         if (this.worldData.hexes[`${x},${y}`]) {
+            const oldTerrain = this.worldData.hexes[`${x},${y}`].terrain;
             this.worldData.hexes[`${x},${y}`].terrain = this.editTerrain;
+            
+            // Update resources for new terrain
+            this.worldData.hexes[`${x},${y}`].resources = this.getTerrainResources(this.editTerrain);
             
             // Update visual
             hex.className = `hex terrain-${this.editTerrain}`;
+            if (hex.classList.contains('selected')) {
+                hex.classList.add('selected');
+            }
             
             // Update hex content
             const terrainDiv = hex.querySelector('.hex-terrain');
             if (terrainDiv) {
                 terrainDiv.textContent = this.editTerrain;
             }
+            
+            console.log(`Changed hex (${x},${y}) from ${oldTerrain} to ${this.editTerrain}`);
+            
+            // If this hex is selected, update the info panel
+            if (this.selectedHex && this.selectedHex.x === x && this.selectedHex.y === y) {
+                this.displayHexDetails(x, y);
+            }
         }
+    }
+    
+    getTerrainResources(terrain) {
+        const resourceMap = {
+            'plains': ['grain', 'horses'],
+            'hills': ['stone', 'iron'],
+            'mountains': ['stone', 'iron', 'gems'],
+            'forests': ['wood', 'herbs'],
+            'swamps': ['herbs', 'fish'],
+            'deserts': ['stone', 'gems'],
+            'water': ['fish']
+        };
+        return resourceMap[terrain] || [];
     }
     
     exitEditMode() {
         this.editMode = false;
         this.editTerrain = null;
         this.container.style.cursor = 'default';
+        
+        // Update edit mode indicator
+        const editIndicator = document.getElementById('edit-mode-indicator');
+        if (editIndicator) {
+            editIndicator.style.display = 'none';
+        }
+        
+        console.log('Edit mode disabled');
+    }
+    
+    // Utility methods
+    getWorldData() {
+        return this.worldData;
+    }
+    
+    clearSelection() {
+        const prevSelected = this.container.querySelector('.hex.selected');
+        if (prevSelected) {
+            prevSelected.classList.remove('selected');
+        }
+        this.selectedHex = null;
+        
+        const infoPanel = document.getElementById('hex-info');
+        if (infoPanel) {
+            infoPanel.innerHTML = '<p>Click on a hex to view details</p>';
+        }
     }
 }
 
 // Initialize hex map when page loads
 document.addEventListener('DOMContentLoaded', function() {
     window.hexMap = new HexMap('hex-grid');
+    console.log('HexMap initialized');
 });
