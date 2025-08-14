@@ -6,10 +6,9 @@ import hashlib
 from datetime import datetime
 
 app = Flask(__name__)
-app.static_folder = 'Static'  # Add this line
 app.secret_key = 'overlord_secret_key_change_in_production'
 
-# Ensure directories exist -added
+# Ensure directories exist
 os.makedirs('config', exist_ok=True)
 os.makedirs('worlds', exist_ok=True)
 
@@ -370,26 +369,6 @@ class GeographicNameGenerator:
             print(f"Error generating geographic name for {terrain}: {e}")
             # Ultimate fallback
             return f"{terrain.title()} Region {random.randint(1, 999)}"
-    
-    def generate_geographic_name(self, terrain):
-        """Generate a geographic name for a terrain cluster"""
-        if terrain not in self.name_data['terrain_name_patterns']:
-            terrain = 'plains'  # fallback
-        
-        pattern_data = self.name_data['terrain_name_patterns'][terrain]
-        
-        max_attempts = 20
-        for _ in range(max_attempts):
-            adjective = random.choice(pattern_data['adjectives'])
-            noun = random.choice(pattern_data['nouns'])
-            name = f"{adjective} {noun}"
-            
-            if name not in self.used_names:
-                self.used_names.add(name)
-                return name
-        
-        # Fallback
-        return f"{random.choice(pattern_data['adjectives'])} {random.choice(pattern_data['nouns'])} {random.randint(1, 999)}"
 
 
 def generate_terrain_for_hex(x, y, terrain_types, params):
@@ -409,6 +388,25 @@ def generate_terrain_for_hex(x, y, terrain_types, params):
             weighted_terrains.extend([terrain] * 2)
     
     return random.choice(weighted_terrains)
+
+
+def generate_population_for_hex(x, y, terrain, params):
+    """Generate base population for a hex based on terrain type"""
+    seed = params.get('seed', 12345)
+    random.seed(seed + x * 1000 + y + 999)  # Different seed from terrain
+    
+    # Base population ranges by terrain type
+    population_ranges = {
+        'plains': (150, 400),   # farming communities
+        'hills': (100, 300),    # mining/herding communities
+        'forests': (75, 250),   # woodcutters, hunters  
+        'swamps': (25, 100),    # hardy survivors, fishers
+        'deserts': (10, 75),    # nomads, oasis dwellers
+        'mountains': (25, 150)  # miners, hermits
+    }
+    
+    min_pop, max_pop = population_ranges.get(terrain, (50, 200))
+    return random.randint(min_pop, max_pop)
 
 
 def get_terrain_resources(terrain):
@@ -437,34 +435,40 @@ def add_geographic_names(world_data):
 
 
 def add_settlements(world_data, params):
-    """Add settlements to the world"""
+    """Add settlements to the world and increase population"""
     name_generator = SettlementNameGenerator()
     
     settlement_density = params.get('settlement_density', 0.3)  # 30% chance per hex
     
     for coord, hex_data in world_data['hexes'].items():
         if hex_data['terrain'] in ['mountains', 'water', 'swamps']:
-            continue  # Skip unsuitable terrain
+            continue  # Skip unsuitable terrain for settlements
         
         if random.random() < settlement_density:
             settlement_type = random.choice(['village', 'village', 'village', 'town', 'city'])
-            population = {
-                'village': random.randint(200, 800),
-                'town': random.randint(800, 3000),
-                'city': random.randint(3000, 10000)
-            }[settlement_type]
+            
+            # Settlement population bonuses added to base population
+            settlement_bonuses = {
+                'village': random.randint(200, 600),
+                'town': random.randint(800, 2000),
+                'city': random.randint(3000, 8000)
+            }
             
             settlement_name = name_generator.generate_settlement_name(hex_data['terrain'], settlement_type)
+            settlement_bonus = settlement_bonuses[settlement_type]
+            
+            # Add settlement bonus to existing base population
+            hex_data['population'] += settlement_bonus
             
             hex_data['population_center'] = {
                 'name': settlement_name,
                 'type': settlement_type,
-                'population': population
+                'population': settlement_bonus  # This is just the settlement bonus, not total
             }
 
 
 def generate_world(width, height, terrain_types, race_types, params):
-    """Generate a complete world with proper hexagonal coordinates"""
+    """Generate a complete world with proper hexagonal coordinates and population"""
     
     # Initialize world data
     world_data = {
@@ -478,16 +482,18 @@ def generate_world(width, height, terrain_types, race_types, params):
         'population_centers': {}
     }
     
-    # Generate terrain for each hex
+    # Generate terrain and base population for each hex
     for y in range(height):
         for x in range(width):
             terrain = generate_terrain_for_hex(x, y, terrain_types, params)
+            base_population = generate_population_for_hex(x, y, terrain, params)
             
             hex_data = {
                 'terrain': terrain,
                 'location_id': f'L{random.randint(1000, 9999)}',
                 'coordinates': {'x': x, 'y': y},
                 'resources': get_terrain_resources(terrain),
+                'population': base_population,  # All hexes now have population
                 'population_center': None
             }
             
@@ -496,7 +502,7 @@ def generate_world(width, height, terrain_types, race_types, params):
     # Add geographic names
     add_geographic_names(world_data)
     
-    # Add settlements
+    # Add settlements (this will increase population in settlement hexes)
     add_settlements(world_data, params)
     
     return world_data
@@ -620,6 +626,7 @@ def get_hex_movement(x, y):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/api/update-world-data', methods=['POST'])
 def update_world_data():
     """Update world data in session after terrain edits"""
@@ -638,11 +645,8 @@ def update_world_data():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
-
-
-
-
