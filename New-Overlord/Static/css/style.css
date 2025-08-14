@@ -461,7 +461,7 @@ footer {
     font-size: 12px;
     position: absolute;
     top: -2px;
-    right: -2px;
+    left: -2px;    /* Changed from right: -2px */
     background: rgba(255, 255, 255, 0.9);
     border-radius: 50%;
     width: 16px;
@@ -470,6 +470,7 @@ footer {
     align-items: center;
     justify-content: center;
     border: 1px solid #333;
+    z-index: 20;   /* Higher z-index to stay on top */
 }
 
 .directions {
@@ -511,4 +512,5 @@ footer {
     position: relative;
     overflow: auto;
 }
+
 
