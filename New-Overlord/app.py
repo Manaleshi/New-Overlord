@@ -14,40 +14,39 @@ os.makedirs('worlds', exist_ok=True)
 
 def get_hex_neighbors(x, y, width, height, wrap_east_west=True):
     """
-    Correct hex neighbors for POINTY-TOP hexagonal layout
+    Hex neighbors for VERTICAL COLUMN layout:
     
-    Layout looks like:
-         0    
-    0         0
-         0
-    0         0
-         0
+    0     0
+      0     0  
+    0     0
+      0     0
+    0     0
     
-    In this system:
-    - Even COLUMNS (x=0,2,4...) are shifted down by half a hex
-    - Odd COLUMNS (x=1,3,5...) are at normal height
+    This is "odd-q" offset coordinates where:
+    - Even columns (x=0,2,4...) are at normal position
+    - Odd columns (x=1,3,5...) are shifted DOWN by half a hex
     """
+    
     neighbors = {}
     
-    # For pointy-top hexagons with column-based offset
     if x % 2 == 0:  # Even columns (0, 2, 4, ...)
-        # Even columns are shifted DOWN
+        # Even columns: NW and NE stay in same row
         offsets = {
-            'N':  (0, -1),   # North: same column, up
-            'NE': (1, -1),   # Northeast: right column, up  
+            'N':  (0, -1),   # North: same column, row up
+            'NE': (1, -1),   # Northeast: right column, row up
             'SE': (1, 0),    # Southeast: right column, same row
-            'S':  (0, 1),    # South: same column, down
+            'S':  (0, 1),    # South: same column, row down
             'SW': (-1, 0),   # Southwest: left column, same row
-            'NW': (-1, -1)   # Northwest: left column, up
+            'NW': (-1, -1)   # Northwest: left column, row up
         }
     else:  # Odd columns (1, 3, 5, ...)
-        # Odd columns are at normal height
+        # Odd columns are shifted DOWN: NE and NW go to same row
         offsets = {
-            'N':  (0, -1),   # North: same column, up
+            'N':  (0, -1),   # North: same column, row up
             'NE': (1, 0),    # Northeast: right column, same row
-            'SE': (1, 1),    # Southeast: right column, down  
-            'S':  (0, 1),    # South: same column, down
-            'SW': (-1, 1),   # Southwest: left column, down
+            'SE': (1, 1),    # Southeast: right column, row down
+            'S':  (0, 1),    # South: same column, row down
+            'SW': (-1, 1),   # Southwest: left column, row down
             'NW': (-1, 0)    # Northwest: left column, same row
         }
     
@@ -57,18 +56,18 @@ def get_hex_neighbors(x, y, width, height, wrap_east_west=True):
         
         # Handle north/south boundaries
         if new_y < 0 or new_y >= height:
-            neighbors[direction] = None  # Impassable boundary
+            neighbors[direction] = None
             continue
             
         # Handle east/west wrapping
         if wrap_east_west:
             if new_x < 0:
-                new_x = width - 1  # Wrap to east edge
+                new_x = width - 1
             elif new_x >= width:
-                new_x = 0  # Wrap to west edge
+                new_x = 0
         else:
             if new_x < 0 or new_x >= width:
-                neighbors[direction] = None  # Impassable boundary
+                neighbors[direction] = None
                 continue
         
         neighbors[direction] = (new_x, new_y)
@@ -574,5 +573,6 @@ def get_hex_movement(x, y):
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
