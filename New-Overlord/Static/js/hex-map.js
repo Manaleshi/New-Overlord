@@ -4,369 +4,245 @@
 class HexMap {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
-        this.width = 5;
-        this.height = 5;
-        this.hexes = {};
-        this.terrainTypes = {};
+        this.worldData = null;
         this.selectedHex = null;
-        this.showCoordinates = false;
-        this.showResources = false;
         
-        this.initializeDefaultTerrain();
-        this.setupEventListeners();
-    }
-    
-    initializeDefaultTerrain() {
-        this.terrainTypes = {
-            "plains": { name: "Plains", color: "#90EE90", resources: ["grain", "horses"] },
-            "hills": { name: "Hills", color: "#DEB887", resources: ["stone", "iron"] },
-            "mountains": { name: "Mountains", color: "#8B7355", resources: ["stone", "iron", "gems"] },
-            "forests": { name: "Forests", color: "#228B22", resources: ["wood", "herbs"] },
-            "swamps": { name: "Swamps", color: "#556B2F", resources: ["herbs", "rare_materials"] },
-            "deserts": { name: "Deserts", color: "#F4A460", resources: ["rare_minerals"] }
+        // Hex display constants
+        this.hexSize = 40;
+        this.hexSpacing = 45;
+        
+        // Proper hexagonal directions in display order
+        this.directionOrder = ['N', 'NE', 'SE', 'S', 'SW', 'NW'];
+        this.directionNames = {
+            'N': 'North',
+            'NE': 'Northeast', 
+            'SE': 'Southeast',
+            'S': 'South',
+            'SW': 'Southwest',
+            'NW': 'Northwest'
         };
     }
     
-    setupEventListeners() {
-        document.getElementById('show-coordinates').addEventListener('change', (e) => {
-            this.showCoordinates = e.target.checked;
-            this.render();
-        });
+    calculateHexPosition(x, y) {
+        /**
+         * Calculate proper hexagonal grid positions
+         * In a hex grid, odd rows are offset by half a hex width
+         */
+        const offsetX = (y % 2) * (this.hexSpacing / 2);
+        const posX = x * this.hexSpacing + offsetX + this.hexSize;
+        const posY = y * (this.hexSpacing * 0.75) + this.hexSize;
         
-        document.getElementById('show-resources').addEventListener('change', (e) => {
-            this.showResources = e.target.checked;
-            this.render();
-        });
+        return { x: posX, y: posY };
     }
     
-    setSize(width, height) {
-        this.width = parseInt(width);
-        this.height = parseInt(height);
-        this.initializeEmptyWorld();
+    loadWorld(worldData) {
+        this.worldData = worldData;
         this.render();
-    }
-    
-    initializeEmptyWorld() {
-        this.hexes = {};
-        for (let y = 0; y < this.height; y++) {
-            for (let x = 0; x < this.width; x++) {
-                const hexId = `${x},${y}`;
-                this.hexes[hexId] = {
-                    terrain: 'plains',
-                    resources: ['grain', 'horses'],
-                    population_center: null
-                };
-            }
-        }
-    }
-    
-    loadWorldData(worldData) {
-        if (worldData.metadata && worldData.metadata.size) {
-            this.width = worldData.metadata.size.width;
-            this.height = worldData.metadata.size.height;
-        }
-        
-        this.hexes = worldData.hexes || {};
-        this.render();
-        this.updateLegend();
-    }
-    
-    getWorldData() {
-        return {
-            metadata: {
-                name: document.getElementById('world-name').value || 'Unnamed World',
-                size: { width: this.width, height: this.height },
-                wrap: { east_west: true, north_south: false },
-                generated_at: new Date().toISOString()
-            },
-            hexes: this.hexes,
-            population_centers: this.getPopulationCenters()
-        };
-    }
-    
-    getPopulationCenters() {
-        const centers = {};
-        let centerId = 1;
-        
-        Object.entries(this.hexes).forEach(([hexId, hexData]) => {
-            if (hexData.population_center) {
-                const settlementId = `settlement_${centerId}`;
-                centers[settlementId] = {
-                    hex: hexId,
-                    type: hexData.population_center.type || 'village',
-                    race: 'human',
-                    population: hexData.population_center.population || 500,
-                    name: hexData.population_center.name || `Settlement ${centerId}`
-                };
-                centerId++;
-            }
-        });
-        
-        return centers;
     }
     
     render() {
+        if (!this.worldData) return;
+        
+        const { width, height } = this.worldData.metadata.size;
+        
+        // Calculate container size for proper hex layout
+        const containerWidth = width * this.hexSpacing + this.hexSpacing;
+        const containerHeight = height * (this.hexSpacing * 0.75) + this.hexSpacing;
+        
         this.container.innerHTML = '';
+        this.container.style.width = `${containerWidth}px`;
+        this.container.style.height = `${containerHeight}px`;
+        this.container.style.position = 'relative';
         
-        if (Object.keys(this.hexes).length === 0) {
-            this.container.innerHTML = '<div class="empty-map">Generate a world to see the hex map</div>';
-            return;
-        }
-        
-        const hexGrid = document.createElement('div');
-        hexGrid.className = 'hex-grid';
-        
-        for (let y = 0; y < this.height; y++) {
-            const row = document.createElement('div');
-            row.className = 'hex-row';
-            
-            for (let x = 0; x < this.width; x++) {
-                const hexId = `${x},${y}`;
-                const hexData = this.hexes[hexId];
-                
-                if (hexData) {
-                    const hex = this.createHexElement(x, y, hexData);
-                    row.appendChild(hex);
-                }
+        // Render each hex
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                this.renderHex(x, y);
             }
-            
-            hexGrid.appendChild(row);
         }
-        
-        this.container.appendChild(hexGrid);
-        this.updateLegend();
     }
     
-    createHexElement(x, y, hexData) {
-        const hex = document.createElement('div');
-        hex.className = 'hex';
-        hex.dataset.x = x;
-        hex.dataset.y = y;
+    renderHex(x, y) {
+        const hexData = this.worldData.hexes[`${x},${y}`];
+        if (!hexData) return;
         
-        const hexContent = document.createElement('div');
-        hexContent.className = 'hex-content';
+        const position = this.calculateHexPosition(x, y);
         
-        // Set terrain color
-        const terrain = this.terrainTypes[hexData.terrain];
-        if (terrain) {
-            hexContent.style.backgroundColor = terrain.color;
-        }
+        // Create hex element
+        const hexElement = document.createElement('div');
+        hexElement.className = `hex terrain-${hexData.terrain}`;
+        hexElement.style.position = 'absolute';
+        hexElement.style.left = `${position.x - this.hexSize/2}px`;
+        hexElement.style.top = `${position.y - this.hexSize/2}px`;
+        hexElement.style.width = `${this.hexSize}px`;
+        hexElement.style.height = `${this.hexSize}px`;
+        hexElement.style.cursor = 'pointer';
         
-        // Add coordinates if enabled
-        if (this.showCoordinates) {
-            const coords = document.createElement('div');
-            coords.className = 'hex-coordinates';
-            coords.textContent = `${x},${y}`;
-            hexContent.appendChild(coords);
-        }
-        
-        // Add terrain name
-        const terrainLabel = document.createElement('div');
-        terrainLabel.className = 'hex-terrain';
-        terrainLabel.textContent = terrain ? terrain.name.substr(0, 4) : 'UNK';
-        hexContent.appendChild(terrainLabel);
-        
-        // Add population center marker
-        if (hexData.population_center) {
-            const population = document.createElement('div');
-            population.className = 'hex-population';
-            population.textContent = hexData.population_center.type === 'city' ? '🏰' : '🏘️';
-            hexContent.appendChild(population);
-        }
-        
-        // Add resources if enabled
-        if (this.showResources && hexData.resources && hexData.resources.length > 0) {
-            const resources = document.createElement('div');
-            resources.className = 'hex-resources';
-            resources.textContent = hexData.resources.slice(0, 2).join(',').substr(0, 8);
-            hexContent.appendChild(resources);
-        }
-        
-        hex.appendChild(hexContent);
+        // Add coordinates as data attributes
+        hexElement.dataset.x = x;
+        hexElement.dataset.y = y;
         
         // Add click handler
-        hex.addEventListener('click', () => this.selectHex(x, y));
+        hexElement.addEventListener('click', () => this.selectHex(x, y));
         
-        return hex;
+        // Add hex content
+        const content = document.createElement('div');
+        content.className = 'hex-content';
+        content.innerHTML = `
+            <div class="hex-coords">${x},${y}</div>
+            <div class="hex-terrain">${hexData.terrain}</div>
+        `;
+        
+        hexElement.appendChild(content);
+        this.container.appendChild(hexElement);
     }
     
-    selectHex(x, y) {
+    async selectHex(x, y) {
         // Remove previous selection
         const prevSelected = this.container.querySelector('.hex.selected');
         if (prevSelected) {
             prevSelected.classList.remove('selected');
         }
         
-        // Select new hex
+        // Add selection to new hex
         const hexElement = this.container.querySelector(`[data-x="${x}"][data-y="${y}"]`);
         if (hexElement) {
             hexElement.classList.add('selected');
         }
         
         this.selectedHex = { x, y };
-        this.updateHexInfo(x, y);
+        
+        // Load and display hex details
+        await this.displayHexDetails(x, y);
     }
     
-    updateHexInfo(x, y) {
-        const hexId = `${x},${y}`;
-        const hexData = this.hexes[hexId];
-        const infoElement = document.getElementById('hex-info');
+    async displayHexDetails(x, y) {
+        const hexData = this.worldData.hexes[`${x},${y}`];
+        if (!hexData) return;
         
-        if (!hexData || !infoElement) return;
-        
-        const terrain = this.terrainTypes[hexData.terrain];
-        const locationId = hexData.location_id || 'L????';
-        const geographicName = hexData.geographic_name || 'Unknown Region';
-        
-        let infoHtml = `
-            <h4>${geographicName} [${locationId}]</h4>
-            <p><strong>Terrain:</strong> ${terrain ? terrain.name : 'Unknown'}</p>
-            <p><strong>Coordinates:</strong> (${x}, ${y})</p>
-            <p><strong>Resources:</strong> ${hexData.resources ? hexData.resources.join(', ') : 'None'}</p>
-        `;
-        
-        if (hexData.population_center) {
-            infoHtml += `
-                <p><strong>Settlement:</strong> ${hexData.population_center.name || 'Unnamed'}</p>
-                <p><strong>Type:</strong> ${hexData.population_center.type || 'village'}</p>
-                <p><strong>Population:</strong> ${hexData.population_center.population || 500}</p>
-            `;
-        }
-        
-        // Add movement directions section
-        infoHtml += '<div class="movement-info"><h5>Directions</h5><div id="movement-directions">Loading movement data...</div></div>';
-        
-        // Add terrain editing section
-        infoHtml += '<div class="terrain-editing"><h5>Terrain Editing</h5><div class="terrain-buttons">';
-        Object.entries(this.terrainTypes).forEach(([key, terrain]) => {
-            infoHtml += `<button class="btn btn-small terrain-btn" data-terrain="${key}" style="background-color: ${terrain.color};">${terrain.name}</button>`;
-        });
-        infoHtml += '</div></div>';
-        
-        infoElement.innerHTML = infoHtml;
-        
-        // Add event listeners for terrain buttons
-        infoElement.querySelectorAll('.terrain-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                this.changeHexTerrain(x, y, btn.dataset.terrain);
-            });
-        });
-        
-        // Load movement data
-        this.loadMovementData(x, y);
-    }
-    
-    async loadMovementData(x, y) {
         try {
-            const worldData = this.getWorldData();
-            const response = await fetch(`/api/hex-movement/${x}/${y}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(worldData)
-            });
+            // Get movement data from backend
+            const response = await fetch(`/api/hex-movement/${x}/${y}`);
+            const movementData = await response.json();
             
             if (response.ok) {
-                const data = await response.json();
-                this.displayMovementDirections(data.directions);
+                this.updateHexInfoPanel(hexData, movementData.directions);
             } else {
-                this.displayMovementError();
+                console.error('Error loading movement data:', movementData.error);
             }
         } catch (error) {
-            console.error('Failed to load movement data:', error);
-            this.displayMovementError();
+            console.error('Error fetching movement data:', error);
         }
     }
     
-displayMovementDirections(directions) {
-        const container = document.getElementById('movement-directions');
-        if (!container) return;
+    updateHexInfoPanel(hexData, directions) {
+        const infoPanel = document.getElementById('hex-info');
+        if (!infoPanel) return;
         
-        if (!directions || directions.length === 0) {
-            container.innerHTML = '<p>No adjacent areas available.</p>';
-            return;
-        }
+        // Get geographic name or generate one
+        const locationName = hexData.geographic_name || `${hexData.terrain} region`;
+        const locationId = hexData.location_id || 'Unknown';
         
-        let html = '';
-        directions.forEach(dir => {
-            const walking = dir.movement.walking;
-            const riding = dir.movement.riding;
-            const flying = dir.movement.flying;
-            
-            html += '<div class="direction-item">';
-            html += `<strong>${dir.direction}</strong>, to ${dir.target_name} [${dir.target_id}], ${dir.target_terrain}<br>`;
-            
-            if (walking.impassable) {
-                html += '<span class="impassable">Impassable</span>';
-                if (walking.requirements && walking.requirements.length > 0) {
-                    html += ` (requires ${walking.requirements.join(' or ')})`;
-                }
-            } else {
-                html += `Walking: ${walking.days} days`;
-                if (riding.days !== walking.days) {
-                    html += `, Riding: ${riding.days} days`;
-                }
-                html += `, Flying: ${flying.days} days`;
-            }
-            html += '</div>';
-        });
-        
-        container.innerHTML = html;
-    }
-    
-    displayMovementError() {
-        const container = document.getElementById('movement-directions');
-        if (container) {
-            container.innerHTML = '<p>Failed to load movement data.</p>';
-        }
-    }
-    
-    changeHexTerrain(x, y, newTerrain) {
-        const hexId = `${x},${y}`;
-        if (this.hexes[hexId] && this.terrainTypes[newTerrain]) {
-            this.hexes[hexId].terrain = newTerrain;
-            this.hexes[hexId].resources = this.terrainTypes[newTerrain].resources || [];
-            this.render();
-            this.selectHex(x, y); // Re-select to update info
-        }
-    }
-    
-    updateLegend() {
-        const legendElement = document.getElementById('terrain-legend');
-        if (!legendElement) return;
-        
-        legendElement.innerHTML = '';
-        
-        Object.entries(this.terrainTypes).forEach(([key, terrain]) => {
-            const legendItem = document.createElement('div');
-            legendItem.className = 'legend-item';
-            
-            legendItem.innerHTML = `
-                <div class="legend-color" style="background-color: ${terrain.color};"></div>
-                <span>${terrain.name}</span>
+        // Build settlement info
+        let settlementInfo = '';
+        if (hexData.population_center) {
+            settlementInfo = `
+                <div class="settlement-info">
+                    <strong>Settlement:</strong> ${hexData.population_center.name} (${hexData.population_center.type})
+                    <br><strong>Population:</strong> ${hexData.population_center.population || 'Unknown'}
+                </div>
             `;
-            
-            legendElement.appendChild(legendItem);
+        }
+        
+        // Build directions info with proper hex directions
+        let directionsHtml = '<div class="directions"><h4>Directions:</h4>';
+        
+        for (const direction of this.directionOrder) {
+            if (directions[direction]) {
+                const dirData = directions[direction];
+                const directionName = this.directionNames[direction];
+                
+                if (dirData.movement.walking === 'impassable') {
+                    directionsHtml += `
+                        <div class="direction">
+                            <strong>${directionName}</strong>, to ${dirData.destination}, ${dirData.terrain} 
+                            <span class="impassable">Impassable</span>
+                            ${dirData.movement.note ? ` (${dirData.movement.note})` : ''}
+                        </div>
+                    `;
+                } else {
+                    // Show specific calculated times
+                    const walkTime = dirData.movement.walking;
+                    const rideTime = dirData.movement.riding;
+                    const flyTime = dirData.movement.flying;
+                    
+                    directionsHtml += `
+                        <div class="direction">
+                            <strong>${directionName}</strong>, to ${dirData.destination} [${dirData.location_id || 'Unknown'}], ${dirData.terrain}
+                            <br>&nbsp;&nbsp;&nbsp;&nbsp;Walking: ${walkTime} days, Riding: ${rideTime} days, Flying: ${flyTime} days
+                        </div>
+                    `;
+                }
+            }
+        }
+        directionsHtml += '</div>';
+        
+        // Update the info panel
+        infoPanel.innerHTML = `
+            <h3>${locationName} [${locationId}]</h3>
+            <div class="hex-details">
+                <strong>Terrain:</strong> ${hexData.terrain.charAt(0).toUpperCase() + hexData.terrain.slice(1)}
+                <br><strong>Coordinates:</strong> (${hexData.coordinates.x}, ${hexData.coordinates.y})
+                <br><strong>Resources:</strong> ${hexData.resources ? hexData.resources.join(', ') : 'None'}
+            </div>
+            ${settlementInfo}
+            ${directionsHtml}
+        `;
+    }
+    
+    // Terrain editing methods
+    setTerrainEditMode(terrainType) {
+        this.editMode = true;
+        this.editTerrain = terrainType;
+        this.container.style.cursor = 'crosshair';
+        
+        // Add click handlers for terrain editing
+        const hexes = this.container.querySelectorAll('.hex');
+        hexes.forEach(hex => {
+            hex.addEventListener('click', this.handleTerrainEdit.bind(this));
         });
     }
     
-    clear() {
-        this.hexes = {};
-        this.selectedHex = null;
-        this.container.innerHTML = '<div class="empty-map">Generate a world to see the hex map</div>';
+    handleTerrainEdit(event) {
+        if (!this.editMode) return;
         
-        const infoElement = document.getElementById('hex-info');
-        if (infoElement) {
-            infoElement.innerHTML = '<p>Click on a hex to see details or edit terrain</p>';
+        const hex = event.currentTarget;
+        const x = parseInt(hex.dataset.x);
+        const y = parseInt(hex.dataset.y);
+        
+        // Update terrain in data
+        if (this.worldData.hexes[`${x},${y}`]) {
+            this.worldData.hexes[`${x},${y}`].terrain = this.editTerrain;
+            
+            // Update visual
+            hex.className = `hex terrain-${this.editTerrain}`;
+            
+            // Update hex content
+            const terrainDiv = hex.querySelector('.hex-terrain');
+            if (terrainDiv) {
+                terrainDiv.textContent = this.editTerrain;
+            }
         }
     }
     
-    setTerrainTypes(terrainTypes) {
-        this.terrainTypes = terrainTypes;
-        this.updateLegend();
+    exitEditMode() {
+        this.editMode = false;
+        this.editTerrain = null;
+        this.container.style.cursor = 'default';
     }
 }
 
-// Export for use in other scripts
-window.HexMap = HexMap;
+// Initialize hex map when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    window.hexMap = new HexMap('hex-grid');
+});
