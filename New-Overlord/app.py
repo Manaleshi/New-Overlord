@@ -620,11 +620,29 @@ def get_hex_movement(x, y):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/update-world-data', methods=['POST'])
+def update_world_data():
+    """Update world data in session after terrain edits"""
+    try:
+        data = request.get_json()
+        world_data = data.get('world_data')
+        
+        if not world_data:
+            return jsonify({'error': 'No world data provided'}), 400
+        
+        # Update the session with the modified world data
+        session['current_world'] = world_data
+        
+        return jsonify({'success': True, 'message': 'World data updated'})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
