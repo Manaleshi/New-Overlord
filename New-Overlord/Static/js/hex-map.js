@@ -7,7 +7,7 @@ class HexMap {
         this.worldData = null;
         this.selectedHex = null;
         
-        // Hex display constants
+        // Hex display constants for vertical layout
         this.hexSize = 40;
         this.hexSpacing = 45;
         
@@ -28,28 +28,28 @@ class HexMap {
     }
     
     calculateHexPosition(x, y) {
-    /**
-     * Calculate positions for VERTICAL COLUMN hexagonal layout
-     * 
-     * Layout:
-     * 0     0
-     *   0     0  
-     * 0     0
-     *   0     0
-     * 
-     * - Even columns (x=0,2,4...) are at normal position
-     * - Odd columns (x=1,3,5...) are shifted DOWN by half a hex height
-     */
-    
-    // Horizontal spacing between columns
-    const posX = x * (this.hexSpacing * 0.75) + this.hexSize;
-    
-    // Vertical position with offset for odd columns
-    const offsetY = (x % 2) * (this.hexSpacing / 2); // Odd columns shifted down
-    const posY = y * this.hexSpacing + offsetY + this.hexSize;
-    
-    return { x: posX, y: posY };
-}
+        /**
+         * Calculate positions for VERTICAL COLUMN hexagonal layout
+         * 
+         * Layout looks like vertical columns with odd columns shifted down:
+         * hex     hex
+         *   hex     hex  
+         * hex     hex
+         *   hex     hex
+         * 
+         * - Even columns (x=0,2,4...) are at normal position
+         * - Odd columns (x=1,3,5...) are shifted DOWN by half a hex height
+         */
+        
+        // Horizontal spacing between columns
+        const posX = x * (this.hexSpacing * 0.75) + this.hexSize;
+        
+        // Vertical position with offset for odd columns
+        const offsetY = (x % 2) * (this.hexSpacing / 2); // Odd columns shifted down
+        const posY = y * this.hexSpacing + offsetY + this.hexSize;
+        
+        return { x: posX, y: posY };
+    }
     
     loadWorld(worldData) {
         this.worldData = worldData;
@@ -57,25 +57,25 @@ class HexMap {
     }
     
     render() {
-    if (!this.worldData) return;
-    
-    const { width, height } = this.worldData.metadata.size;
-    
-    // Calculate container size for vertical column layout
-    const containerWidth = width * (this.hexSpacing * 0.75) + this.hexSpacing + 100;
-    const containerHeight = height * this.hexSpacing + (this.hexSpacing / 2) + 100;
-    
-    this.container.innerHTML = '';
-    this.container.style.width = `${containerWidth}px`;
-    this.container.style.height = `${containerHeight}px`;
-    this.container.style.position = 'relative';
-    
-    // Render each hex - iterate by columns first, then rows
-    for (let x = 0; x < width; x++) {
-        for (let y = 0; y < height; y++) {
-            this.renderHex(x, y);
+        if (!this.worldData) return;
+        
+        const { width, height } = this.worldData.metadata.size;
+        
+        // Calculate container size for vertical column layout
+        const containerWidth = width * (this.hexSpacing * 0.75) + this.hexSpacing + 100;
+        const containerHeight = height * this.hexSpacing + (this.hexSpacing / 2) + 100;
+        
+        this.container.innerHTML = '';
+        this.container.style.width = `${containerWidth}px`;
+        this.container.style.height = `${containerHeight}px`;
+        this.container.style.position = 'relative';
+        
+        // Render each hex - iterate by columns first, then rows for vertical layout
+        for (let x = 0; x < width; x++) {
+            for (let y = 0; y < height; y++) {
+                this.renderHex(x, y);
+            }
         }
-    }
     }
     
     renderHex(x, y) {
