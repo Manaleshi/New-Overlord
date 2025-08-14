@@ -1,680 +1,569 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 import json
 import os
 import random
+import hashlib
 from datetime import datetime
 
-# Movement Calculator Class
-class MovementCalculator:
-    def __init__(self, config_dir='config'):
-        self.config_dir = config_dir
-        self.movement_data = None
-        self.load_movement_data()
+app = Flask(__name__)
+app.secret_key = 'overlord_secret_key_change_in_production'
+
+# Ensure directories exist
+os.makedirs('config', exist_ok=True)
+os.makedirs('worlds', exist_ok=True)
+
+def get_hex_neighbors(x, y, width, height, wrap_east_west=True):
+    """
+    Get the 6 neighbors of a hex using proper hexagonal coordinates.
+    Returns dict with direction names as keys and (x, y) coordinates as values.
     
-    def load_movement_data(self):
-        try:
-            filepath = os.path.join(self.config_dir, 'movement-system.json')
-            with open(filepath, 'r') as f:
-                self.movement_data = json.load(f)
-        except FileNotFoundError:
-            self.use_basic_movement_data()
+    Proper hex directions: N, NE, SE, S, SW, NW
+    """
+    neighbors = {}
     
-    def use_basic_movement_data(self):
-        self.movement_data = {
-            "terrain_movement_costs": {
-                "plains": {"base_exit_time": 2, "base_enter_time": 2, "passable": True},
-                "hills": {"base_exit_time": 4, "base_enter_time": 4, "passable": True},
-                "mountains": {"base_exit_time": 8, "base_enter_time": 8, "passable": False},
-                "forests": {"base_exit_time": 5, "base_enter_time": 5, "passable": True},
-                "swamps": {"base_exit_time": 7, "base_enter_time": 7, "passable": True},
-                "deserts": {"base_exit_time": 6, "base_enter_time": 6, "passable": True}
-            },
-            "distance_variation": {"adjacent_hex": {"min_bonus": 0, "max_bonus": 3}}
+    # In a hexagonal grid, neighbor offsets depend on whether the row is even or odd
+    # This is the "offset coordinate" system for hexagonal grids
+    
+    if y % 2 == 0:  # Even rows
+        offsets = {
+            'N':  (0, -1),   # North
+            'NE': (1, -1),   # Northeast  
+            'SE': (1, 0),    # Southeast
+            'S':  (0, 1),    # South
+            'SW': (-1, 0),   # Southwest
+            'NW': (-1, -1)   # Northwest
+        }
+    else:  # Odd rows
+        offsets = {
+            'N':  (0, -1),   # North
+            'NE': (1, 0),    # Northeast
+            'SE': (1, 1),    # Southeast  
+            'S':  (0, 1),    # South
+            'SW': (-1, 1),   # Southwest
+            'NW': (-1, 0)    # Northwest
         }
     
-    def calculate_movement_time(self, from_terrain, to_terrain, movement_type="walking", from_coords=None, to_coords=None):
-        if not self.movement_data:
-            self.use_basic_movement_data()
+    for direction, (dx, dy) in offsets.items():
+        new_x = x + dx
+        new_y = y + dy
         
-        terrain_costs = self.movement_data["terrain_movement_costs"]
-        from_data = terrain_costs.get(from_terrain, terrain_costs["plains"])
-        to_data = terrain_costs.get(to_terrain, terrain_costs["plains"])
+        # Handle north/south boundaries
+        if new_y < 0 or new_y >= height:
+            neighbors[direction] = None  # Impassable boundary
+            continue
+            
+        # Handle east/west wrapping
+        if wrap_east_west:
+            if new_x < 0:
+                new_x = width - 1  # Wrap to east edge
+            elif new_x >= width:
+                new_x = 0  # Wrap to west edge
+        else:
+            if new_x < 0 or new_x >= width:
+                neighbors[direction] = None  # Impassable boundary
+                continue
         
-        if not to_data.get("passable", True):
+        neighbors[direction] = (new_x, new_y)
+    
+    return neighbors
+
+
+class MovementCalculator:
+    def __init__(self):
+        # Base movement times by terrain (in days for walking)
+        self.terrain_movement = {
+            'plains': {'min': 4, 'max': 6},
+            'hills': {'min': 6, 'max': 9}, 
+            'mountains': {'min': 12, 'max': 15, 'impassable_walking': True},
+            'forests': {'min': 8, 'max': 12},
+            'swamps': {'min': 10, 'max': 15},
+            'deserts': {'min': 6, 'max': 10},
+            'water': {'impassable_walking': True, 'impassable_riding': True}
+        }
+        
+        # Movement mode modifiers
+        self.movement_modes = {
+            'walking': 1.0,
+            'riding': 0.67,  # 33% faster
+            'flying': 4       # Fixed 4 days regardless of terrain
+        }
+    
+    def calculate_movement_time(self, from_terrain, to_terrain, from_coords, to_coords):
+        """
+        Calculate specific movement time between two hexes.
+        Returns dict with walking/riding/flying times, or indicates if impassable.
+        """
+        # Check if movement is possible
+        if (self.terrain_movement.get(from_terrain, {}).get('impassable_walking') or
+            self.terrain_movement.get(to_terrain, {}).get('impassable_walking')):
             return {
-                "days": None, "impassable": True,
-                "reason": f"Impassable terrain: {to_terrain}",
-                "requirements": to_data.get("special_requirements", [])
+                'walking': 'impassable',
+                'riding': 'impassable', 
+                'flying': 4,
+                'note': 'requires mountainwalk or flying'
             }
         
-        exit_time = from_data["base_exit_time"]
-        enter_time = to_data["base_enter_time"]
-        distance_var = self.movement_data.get("distance_variation", {}).get("adjacent_hex", {})
-        min_distance = distance_var.get("min_bonus", 0)
-        max_distance = distance_var.get("max_bonus", 3)
+        # Get terrain movement ranges
+        from_range = self.terrain_movement.get(from_terrain, {'min': 6, 'max': 9})
+        to_range = self.terrain_movement.get(to_terrain, {'min': 6, 'max': 9})
         
-        base_min = exit_time + enter_time + min_distance
-        base_max = exit_time + enter_time + max_distance
+        # Calculate base time (average of exit and entry terrain)
+        from_time = (from_range['min'] + from_range['max']) / 2
+        to_time = (to_range['min'] + to_range['max']) / 2
+        base_time = (from_time + to_time) / 2
         
-        # Calculate specific travel time (deterministic based on coordinates)
-        if from_coords and to_coords:
-            seed = hash(f"{from_coords[0]},{from_coords[1]}-{to_coords[0]},{to_coords[1]}") % 1000
-            variation = seed % (base_max - base_min + 1)
-            specific_time = base_min + variation
-        else:
-            # Fallback to middle of range if no coordinates
-            specific_time = (base_min + base_max) // 2
+        # Add coordinate-based variation (deterministic but varies by route)
+        route_seed = f"{from_coords[0]},{from_coords[1]}-{to_coords[0]},{to_coords[1]}"
+        hash_val = int(hashlib.md5(route_seed.encode()).hexdigest()[:8], 16)
+        variation = (hash_val % 7) - 3  # -3 to +3 variation
         
-        if movement_type == "flying":
-            return {"days": 4, "impassable": False, "movement_type": "flying"}
-        elif movement_type == "riding":
-            ride_time = max(1, int(specific_time * 0.67))
-            return {"days": ride_time, "impassable": False, "movement_type": "riding"}
-        else:
-            return {"days": specific_time, "impassable": False, "movement_type": "walking"}
-    
-    def get_hex_neighbors(self, x, y, width, height):
-        neighbors = []
-        if y % 2 == 0:  # Even row
-            potential = [(x-1, y), (x+1, y), (x, y-1), (x+1, y-1), (x, y+1), (x+1, y+1)]
-        else:  # Odd row  
-            potential = [(x-1, y), (x+1, y), (x-1, y-1), (x, y-1), (x-1, y+1), (x, y+1)]
+        walking_time = max(3, int(base_time + variation))
         
-        for nx, ny in potential:
-            if 0 <= nx < width and 0 <= ny < height:
-                neighbors.append((nx, ny))
-        return neighbors
-    
-    def get_direction_name(self, from_x, from_y, to_x, to_y):
-        dx = to_x - from_x
-        dy = to_y - from_y
+        # Calculate other movement modes
+        riding_time = max(2, int(walking_time * self.movement_modes['riding']))
+        flying_time = self.movement_modes['flying']
         
-        if from_y % 2 == 1:  # Odd row
-            if dx == 0 and dy == -1: return "North"
-            elif dx == 1 and dy == -1: return "Northeast" 
-            elif dx == 1 and dy == 0: return "Southeast"
-            elif dx == 0 and dy == 1: return "South"
-            elif dx == -1 and dy == 1: return "Southwest"
-            elif dx == -1 and dy == 0: return "Northwest"
-        else:  # Even row
-            if dx == 0 and dy == -1: return "North"
-            elif dx == 1 and dy == -1: return "Northeast"
-            elif dx == 1 and dy == 0: return "Southeast" 
-            elif dx == 0 and dy == 1: return "South"
-            elif dx == -1 and dy == 1: return "Southwest"
-            elif dx == -1 and dy == 0: return "Northwest"
-        return "Unknown"
+        return {
+            'walking': walking_time,
+            'riding': riding_time,
+            'flying': flying_time
+        }
     
     def calculate_all_directions(self, x, y, world_data):
-        width = world_data["metadata"]["size"]["width"]
-        height = world_data["metadata"]["size"]["height"]
-        current_hex = world_data["hexes"].get(f"{x},{y}")
+        """
+        Calculate movement times for all 6 directions from a hex.
+        Returns dict with direction as key and movement data as value.
+        """
+        width = world_data['metadata']['size']['width']
+        height = world_data['metadata']['size']['height']
+        wrap_ew = world_data['metadata']['wrap']['east_west']
         
+        current_hex = world_data['hexes'].get(f'{x},{y}')
         if not current_hex:
-            return []
+            return {}
         
-        current_terrain = current_hex["terrain"]
-        neighbors = self.get_hex_neighbors(x, y, width, height)
-        directions = []
+        current_terrain = current_hex['terrain']
+        neighbors = get_hex_neighbors(x, y, width, height, wrap_ew)
         
-        for nx, ny in neighbors:
-            neighbor_hex = world_data["hexes"].get(f"{nx},{ny}")
-            if neighbor_hex:
-                direction = self.get_direction_name(x, y, nx, ny)
-                target_terrain = neighbor_hex["terrain"]
-                target_name = neighbor_hex.get("geographic_name", f"{target_terrain.title()} Region")
-                target_id = neighbor_hex.get("location_id", "L????")
-                
-                # Pass coordinates for deterministic travel times
-                walking = self.calculate_movement_time(current_terrain, target_terrain, "walking", [x, y], [nx, ny])
-                riding = self.calculate_movement_time(current_terrain, target_terrain, "riding", [x, y], [nx, ny]) 
-                flying = self.calculate_movement_time(current_terrain, target_terrain, "flying", [x, y], [nx, ny])
-                
-                directions.append({
-                    "direction": direction, "target_name": target_name, "target_id": target_id,
-                    "target_terrain": target_terrain, "coordinates": [nx, ny],
-                    "movement": {"walking": walking, "riding": riding, "flying": flying}
-                })
+        directions = {}
         
-        direction_order = ["North", "Northeast", "Southeast", "South", "Southwest", "Northwest"]
-        directions.sort(key=lambda d: direction_order.index(d["direction"]) if d["direction"] in direction_order else 99)
-        return directions
-        
-# Geographic Name Generator Class
-class GeographicNameGenerator:
-    def __init__(self, config_dir='config'):
-        self.config_dir = config_dir
-        self.name_data = None
-        self.used_names = set()
-        self.load_name_data()
-    
-    def load_name_data(self):
-        try:
-            filepath = os.path.join(self.config_dir, 'geographic-names.json')
-            with open(filepath, 'r') as f:
-                self.name_data = json.load(f)
-        except FileNotFoundError:
-            self.use_basic_name_data()
-    
-    def use_basic_name_data(self):
-        self.name_data = {
-            "geographic_naming_styles": {
-                "fantasy": {
-                    "plains": {"prefixes": ["Golden", "Green", "Wind"], "suffixes": ["Plains", "Fields", "Meadows"]},
-                    "hills": {"prefixes": ["Rolling", "Stone", "Copper"], "suffixes": ["Hills", "Downs", "Heights"]},
-                    "mountains": {"prefixes": ["Iron", "Storm", "Dragon"], "suffixes": ["Mountains", "Peaks", "Range"]},
-                    "forests": {"prefixes": ["Dark", "Ancient", "Deep"], "suffixes": ["Wood", "Forest", "Grove"]},
-                    "swamps": {"prefixes": ["Shadow", "Mist", "Black"], "suffixes": ["Marshes", "Swamps", "Bogs"]},
-                    "deserts": {"prefixes": ["Burning", "Red", "Endless"], "suffixes": ["Desert", "Sands", "Wastes"]}
+        for direction, coords in neighbors.items():
+            if coords is None:
+                # Boundary hex
+                directions[direction] = {
+                    'destination': 'Impassable Boundary',
+                    'terrain': 'boundary',
+                    'location_id': None,
+                    'movement': {
+                        'walking': 'impassable',
+                        'riding': 'impassable',
+                        'flying': 'impassable'
+                    }
                 }
-            },
-            "terrain_cultural_preferences": {
-                "plains": ["fantasy"], "hills": ["fantasy"], "mountains": ["fantasy"],
-                "forests": ["fantasy"], "swamps": ["fantasy"], "deserts": ["fantasy"]
-            }
-        }
-    
-    def generate_geographic_name(self, terrain):
-        if not self.name_data:
-            self.use_basic_name_data()
-        
-        # Choose cultural style
-        cultural_style = self.choose_cultural_style(terrain)
-        style_data = self.name_data["geographic_naming_styles"].get(cultural_style, {})
-        terrain_data = style_data.get(terrain, {})
-        
-        if not terrain_data:
-            return self.create_basic_name(terrain)
-        
-        attempts = 0
-        name = ""
-        
-        while attempts < 50:
-            prefix = random.choice(terrain_data.get("prefixes", ["Great"]))
-            suffix = random.choice(terrain_data.get("suffixes", ["Land"]))
-            name = f"{prefix} {suffix}"
-            
-            if name not in self.used_names:
-                break
-            attempts += 1
-        
-        if name in self.used_names:
-            counter = 2
-            base_name = name
-            while f"{base_name} {counter}" in self.used_names and counter < 100:
-                counter += 1
-            name = f"{base_name} {counter}"
-        
-        self.used_names.add(name)
-        return name
-    
-    def choose_cultural_style(self, terrain):
-        preferences = self.name_data.get('terrain_cultural_preferences', {})
-        if terrain in preferences:
-            return random.choice(preferences[terrain])
-        return 'fantasy'
-    
-    def create_basic_name(self, terrain):
-        basic_names = {
-            "plains": "Great Plains",
-            "hills": "Rolling Hills", 
-            "mountains": "High Mountains",
-            "forests": "Deep Forest",
-            "swamps": "Dark Marshes",
-            "deserts": "Endless Desert"
-        }
-        return basic_names.get(terrain, "Unknown Land")
-    
-    def reset_used_names(self):
-        self.used_names.clear()
-
-# Terrain Clustering Algorithm
-class TerrainClusterer:
-    def __init__(self, world_data):
-        self.world_data = world_data
-        self.width = world_data["metadata"]["size"]["width"]
-        self.height = world_data["metadata"]["size"]["height"]
-        self.clusters = {}
-        self.hex_to_cluster = {}
-    
-    def find_clusters(self):
-        visited = set()
-        cluster_id = 0
-        
-        for y in range(self.height):
-            for x in range(self.width):
-                hex_id = f"{x},{y}"
-                if hex_id not in visited and hex_id in self.world_data["hexes"]:
-                    terrain = self.world_data["hexes"][hex_id]["terrain"]
-                    cluster = self.flood_fill(x, y, terrain, visited)
+            else:
+                neighbor_x, neighbor_y = coords
+                neighbor_hex = world_data['hexes'].get(f'{neighbor_x},{neighbor_y}')
+                
+                if neighbor_hex:
+                    movement_times = self.calculate_movement_time(
+                        current_terrain, 
+                        neighbor_hex['terrain'],
+                        (x, y),
+                        (neighbor_x, neighbor_y)
+                    )
                     
-                    if cluster:
-                        self.clusters[cluster_id] = {
-                            "terrain": terrain,
-                            "hexes": cluster,
-                            "name": None
-                        }
-                        
-                        for hex_coord in cluster:
-                            self.hex_to_cluster[hex_coord] = cluster_id
-                        
-                        cluster_id += 1
+                    directions[direction] = {
+                        'destination': neighbor_hex.get('geographic_name', f'Hex {neighbor_x},{neighbor_y}'),
+                        'terrain': neighbor_hex['terrain'],
+                        'location_id': neighbor_hex.get('location_id'),
+                        'movement': movement_times
+                    }
         
-        return self.clusters
-    
-    def flood_fill(self, start_x, start_y, target_terrain, visited):
-        stack = [(start_x, start_y)]
-        cluster = []
-        
-        while stack:
-            x, y = stack.pop()
-            hex_id = f"{x},{y}"
-            
-            if (hex_id in visited or 
-                hex_id not in self.world_data["hexes"] or
-                self.world_data["hexes"][hex_id]["terrain"] != target_terrain):
-                continue
-            
-            visited.add(hex_id)
-            cluster.append(hex_id)
-            
-            # Check 6 neighbors (hex grid)
-            neighbors = self.get_hex_neighbors(x, y)
-            for nx, ny in neighbors:
-                if 0 <= nx < self.width and 0 <= ny < self.height:
-                    neighbor_hex = f"{nx},{ny}"
-                    if (neighbor_hex not in visited and 
-                        neighbor_hex in self.world_data["hexes"] and
-                        self.world_data["hexes"][neighbor_hex]["terrain"] == target_terrain):
-                        stack.append((nx, ny))
-        
-        return cluster
-    
-    def get_hex_neighbors(self, x, y):
-        # Hex grid neighbors (offset coordinates)
-        if y % 2 == 0:  # Even row
-            return [(x-1, y), (x+1, y), (x, y-1), (x+1, y-1), (x, y+1), (x+1, y+1)]
-        else:  # Odd row
-            return [(x-1, y), (x+1, y), (x-1, y-1), (x, y-1), (x-1, y+1), (x, y+1)]
+        return directions
 
-# Settlement Name Generator Class
+
 class SettlementNameGenerator:
     def __init__(self, config_dir='config'):
         self.config_dir = config_dir
-        self.name_data = None
+        self.name_data = self.load_settlement_names()
         self.used_names = set()
-        self.load_name_data()
     
-    def load_name_data(self):
-        try:
-            filepath = os.path.join(self.config_dir, 'settlement-names.json')
-            with open(filepath, 'r') as f:
-                self.name_data = json.load(f)
-        except FileNotFoundError:
-            self.use_basic_name_data()
-    
-    def use_basic_name_data(self):
-        self.name_data = {
+    def load_settlement_names(self):
+        """Load settlement naming configuration"""
+        config_file = os.path.join(self.config_dir, 'settlement-names.json')
+        
+        # Default settlement names if file doesn't exist
+        default_names = {
             "cultural_naming_styles": {
                 "fantasy": {
-                    "prefixes": ["Gold", "Silver", "Stone", "River", "Green", "Iron"],
-                    "suffixes": ["vale", "ford", "wood", "haven", "ridge", "burg"],
+                    "prefixes": ["Golden", "Silver", "Shadow", "Bright", "Dark", "Crystal", "Ancient", "New", "Old", "Deep"],
+                    "suffixes": ["haven", "ford", "bridge", "vale", "hill", "brook", "field", "wood", "shire", "ton"],
+                    "patterns": ["prefix + suffix"]
+                },
+                "norse": {
+                    "prefixes": ["Grim", "Thor", "Bjorn", "Erik", "Rag", "Sven", "Ulf", "Olaf", "Magnus", "Harald"],
+                    "suffixes": ["by", "thorpe", "vik", "heim", "stad", "fjord", "borg", "havn", "land", "gard"],
+                    "patterns": ["prefix + suffix"]
+                },
+                "celtic": {
+                    "prefixes": ["Aber", "Bal", "Ben", "Caer", "Dun", "Glen", "Inver", "Kil", "Llan", "Pen"],
+                    "suffixes": ["mor", "beg", "wyn", "goch", "du", "mawr", "bach", "fawr", "fach", "glas"],
+                    "patterns": ["prefix + suffix"]
+                },
+                "germanic": {
+                    "prefixes": ["Stein", "Berg", "Wald", "Gross", "Klein", "Neu", "Alt", "Hoch", "Tief", "Schwarz"],
+                    "suffixes": ["burg", "dorf", "hausen", "feld", "wald", "berg", "tal", "bach", "brunn", "hof"],
                     "patterns": ["prefix + suffix"]
                 }
             },
             "terrain_cultural_preferences": {
-                "plains": ["fantasy"], "hills": ["fantasy"], "mountains": ["fantasy"],
-                "forests": ["fantasy"], "swamps": ["fantasy"], "deserts": ["fantasy"]
+                "coast": ["norse", "fantasy"],
+                "mountains": ["germanic", "fantasy"],
+                "hills": ["celtic", "germanic"],
+                "forests": ["celtic", "fantasy"],
+                "plains": ["fantasy", "germanic"],
+                "swamps": ["fantasy"],
+                "deserts": ["fantasy"]
             }
         }
-    
-    def generate_name(self, terrain, settlement_type):
-        if not self.name_data:
-            self.use_basic_name_data()
         
-        attempts = 0
-        name = ""
+        if os.path.exists(config_file):
+            try:
+                with open(config_file, 'r') as f:
+                    return json.load(f)
+            except:
+                pass
         
-        while attempts < 50:
-            name = self.create_name(terrain, settlement_type)
-            if name not in self.used_names:
-                break
-            attempts += 1
+        # Save default config
+        with open(config_file, 'w') as f:
+            json.dump(default_names, f, indent=2)
         
-        if name in self.used_names:
-            counter = 2
-            base_name = name
-            while f"{base_name} {counter}" in self.used_names and counter < 100:
-                counter += 1
-            name = f"{base_name} {counter}"
-        
-        self.used_names.add(name)
-        return name
-    
-    def create_name(self, terrain, settlement_type):
-        cultural_style = self.choose_cultural_style(terrain)
-        style_data = self.name_data["cultural_naming_styles"].get(cultural_style)
-        
-        if not style_data:
-            return self.create_basic_name()
-        
-        if (settlement_type == 'city' and 
-            'unique_city_names' in self.name_data and
-            cultural_style in self.name_data['unique_city_names']):
-            if random.random() < 0.4:
-                city_names = self.name_data['unique_city_names'][cultural_style]
-                unused_names = [n for n in city_names if n not in self.used_names]
-                if unused_names:
-                    return random.choice(unused_names)
-        
-        return self.generate_compound_name(style_data)
+        return default_names
     
     def choose_cultural_style(self, terrain):
-        preferences = self.name_data.get('terrain_cultural_preferences', {})
-        if terrain in preferences:
-            return random.choice(preferences[terrain])
-        return 'fantasy'
+        """Choose cultural naming style based on terrain"""
+        preferences = self.name_data['terrain_cultural_preferences'].get(terrain, ['fantasy'])
+        return random.choice(preferences)
     
-    def generate_compound_name(self, style_data):
-        patterns = style_data.get('patterns', ['prefix + suffix'])
-        pattern = random.choice(patterns)
+    def generate_settlement_name(self, terrain, settlement_type):
+        """Generate a settlement name based on terrain and type"""
+        cultural_style = self.choose_cultural_style(terrain)
+        style_data = self.name_data['cultural_naming_styles'][cultural_style]
         
-        prefixes = style_data.get('prefixes', ['New'])
-        suffixes = style_data.get('suffixes', ['town'])
+        max_attempts = 20
+        for _ in range(max_attempts):
+            prefix = random.choice(style_data['prefixes'])
+            suffix = random.choice(style_data['suffixes'])
+            name = f"{prefix}{suffix}"
+            
+            if name not in self.used_names:
+                self.used_names.add(name)
+                return name
         
-        if pattern == 'prefix + middle + suffix' and 'middle_parts' in style_data:
-            middle_parts = style_data['middle_parts']
-            return random.choice(prefixes) + random.choice(middle_parts) + random.choice(suffixes)
+        # Fallback if all names are used
+        return f"{random.choice(style_data['prefixes'])}{settlement_type}{random.randint(1, 999)}"
+
+
+class GeographicNameGenerator:
+    def __init__(self, config_dir='config'):
+        self.config_dir = config_dir
+        self.name_data = self.load_geographic_names()
+        self.used_names = set()
+    
+    def load_geographic_names(self):
+        """Load geographic naming configuration"""
+        config_file = os.path.join(self.config_dir, 'geographic-names.json')
+        
+        default_names = {
+            "terrain_name_patterns": {
+                "plains": {
+                    "adjectives": ["Golden", "Wide", "Vast", "Rolling", "Windswept", "Endless", "Green", "Fertile"],
+                    "nouns": ["Plains", "Fields", "Meadows", "Grasslands", "Steppes", "Prairie"]
+                },
+                "hills": {
+                    "adjectives": ["Rolling", "Gentle", "Rocky", "Ancient", "Misty", "Verdant", "Steep"],
+                    "nouns": ["Hills", "Highlands", "Downs", "Ridges", "Knolls", "Mounds"]
+                },
+                "mountains": {
+                    "adjectives": ["Towering", "Jagged", "Snow-capped", "Ancient", "Mighty", "Forbidding", "Majestic"],
+                    "nouns": ["Mountains", "Peaks", "Range", "Heights", "Crags", "Summits"]
+                },
+                "forests": {
+                    "adjectives": ["Dark", "Ancient", "Whispering", "Deep", "Enchanted", "Shadowy", "Primeval"],
+                    "nouns": ["Forest", "Woods", "Grove", "Thicket", "Woodland", "Copse"]
+                },
+                "swamps": {
+                    "adjectives": ["Murky", "Fetid", "Treacherous", "Misty", "Haunted", "Boggy", "Dank"],
+                    "nouns": ["Swamp", "Marsh", "Bog", "Mire", "Wetlands", "Fen"]
+                },
+                "deserts": {
+                    "adjectives": ["Burning", "Endless", "Shifting", "Scorching", "Barren", "Vast", "Bleached"],
+                    "nouns": ["Desert", "Wastes", "Dunes", "Sands", "Expanse", "Barrens"]
+                }
+            }
+        }
+        
+        if os.path.exists(config_file):
+            try:
+                with open(config_file, 'r') as f:
+                    return json.load(f)
+            except:
+                pass
+        
+        with open(config_file, 'w') as f:
+            json.dump(default_names, f, indent=2)
+        
+        return default_names
+    
+    def generate_geographic_name(self, terrain):
+        """Generate a geographic name for a terrain cluster"""
+        if terrain not in self.name_data['terrain_name_patterns']:
+            terrain = 'plains'  # fallback
+        
+        pattern_data = self.name_data['terrain_name_patterns'][terrain]
+        
+        max_attempts = 20
+        for _ in range(max_attempts):
+            adjective = random.choice(pattern_data['adjectives'])
+            noun = random.choice(pattern_data['nouns'])
+            name = f"{adjective} {noun}"
+            
+            if name not in self.used_names:
+                self.used_names.add(name)
+                return name
+        
+        # Fallback
+        return f"{random.choice(pattern_data['adjectives'])} {random.choice(pattern_data['nouns'])} {random.randint(1, 999)}"
+
+
+def generate_terrain_for_hex(x, y, terrain_types, params):
+    """Generate terrain for a specific hex coordinate"""
+    # Simple terrain generation - can be enhanced with more sophisticated algorithms
+    seed = params.get('seed', 12345)
+    random.seed(seed + x * 1000 + y)
+    
+    # Weight terrain types (plains more common, mountains less common)
+    weighted_terrains = []
+    for terrain in terrain_types:
+        if terrain == 'plains':
+            weighted_terrains.extend([terrain] * 3)
+        elif terrain == 'mountains':
+            weighted_terrains.extend([terrain] * 1)
         else:
-            return random.choice(prefixes) + random.choice(suffixes)
+            weighted_terrains.extend([terrain] * 2)
     
-    def create_basic_name(self):
-        prefixes = ["Gold", "Silver", "Stone", "River", "Green", "Iron"]
-        suffixes = ["vale", "ford", "wood", "haven", "ridge", "burg"]
-        return random.choice(prefixes) + random.choice(suffixes)
+    return random.choice(weighted_terrains)
+
+
+def get_terrain_resources(terrain):
+    """Get default resources for terrain type"""
+    resource_map = {
+        'plains': ['grain', 'horses'],
+        'hills': ['stone', 'iron'],
+        'mountains': ['stone', 'iron', 'gems'],
+        'forests': ['wood', 'herbs'],
+        'swamps': ['herbs', 'fish'],
+        'deserts': ['stone', 'gems'],
+        'water': ['fish']
+    }
+    return resource_map.get(terrain, [])
+
+
+def add_geographic_names(world_data):
+    """Add geographic names to terrain clusters"""
+    name_generator = GeographicNameGenerator()
     
-    def reset_used_names(self):
-        self.used_names.clear()
+    # Simple approach: assign random geographic names to each hex
+    # In the future, this could be enhanced with terrain clustering
+    for coord, hex_data in world_data['hexes'].items():
+        if 'geographic_name' not in hex_data:
+            hex_data['geographic_name'] = name_generator.generate_geographic_name(hex_data['terrain'])
 
-app = Flask(__name__, static_folder='Static')
 
-# Add CSP bypass for development
-@app.after_request
-def after_request(response):
-    response.headers['Content-Security-Policy'] = "default-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-    return response
+def add_settlements(world_data, params):
+    """Add settlements to the world"""
+    name_generator = SettlementNameGenerator()
+    
+    settlement_density = params.get('settlement_density', 0.3)  # 30% chance per hex
+    
+    for coord, hex_data in world_data['hexes'].items():
+        if hex_data['terrain'] in ['mountains', 'water', 'swamps']:
+            continue  # Skip unsuitable terrain
+        
+        if random.random() < settlement_density:
+            settlement_type = random.choice(['village', 'village', 'village', 'town', 'city'])
+            population = {
+                'village': random.randint(200, 800),
+                'town': random.randint(800, 3000),
+                'city': random.randint(3000, 10000)
+            }[settlement_type]
+            
+            settlement_name = name_generator.generate_settlement_name(hex_data['terrain'], settlement_type)
+            
+            hex_data['population_center'] = {
+                'name': settlement_name,
+                'type': settlement_type,
+                'population': population
+            }
 
-# Configuration
-WORLD_DATA_DIR = 'worlds'
-CONFIG_DIR = 'config'
 
-# Ensure directories exist
-os.makedirs(WORLD_DATA_DIR, exist_ok=True)
-os.makedirs(CONFIG_DIR, exist_ok=True)
+def generate_world(width, height, terrain_types, race_types, params):
+    """Generate a complete world with proper hexagonal coordinates"""
+    
+    # Initialize world data
+    world_data = {
+        'metadata': {
+            'name': params.get('name', 'Generated World'),
+            'size': {'width': width, 'height': height},
+            'wrap': {'east_west': True, 'north_south': False},
+            'generation_date': datetime.now().isoformat()
+        },
+        'hexes': {},
+        'population_centers': {}
+    }
+    
+    # Generate terrain for each hex
+    for y in range(height):
+        for x in range(width):
+            terrain = generate_terrain_for_hex(x, y, terrain_types, params)
+            
+            hex_data = {
+                'terrain': terrain,
+                'location_id': f'L{random.randint(1000, 9999)}',
+                'coordinates': {'x': x, 'y': y},
+                'resources': get_terrain_resources(terrain),
+                'population_center': None
+            }
+            
+            world_data['hexes'][f'{x},{y}'] = hex_data
+    
+    # Add geographic names
+    add_geographic_names(world_data)
+    
+    # Add settlements
+    add_settlements(world_data, params)
+    
+    return world_data
 
+
+# Routes
 @app.route('/')
 def index():
     """Main landing page"""
     return render_template('index.html')
+
 
 @app.route('/world-generator')
 def world_generator():
     """World generator interface"""
     return render_template('world-generator.html')
 
+
 @app.route('/api/terrain-types')
 def get_terrain_types():
     """Get available terrain types"""
-    try:
-        with open(os.path.join(CONFIG_DIR, 'terrain-types.json'), 'r') as f:
-            terrain_data = json.load(f)
-        return jsonify(terrain_data)
-    except FileNotFoundError:
-        # Return default terrain types if file doesn't exist
-        default_terrain = {
-            "terrain_types": {
-                "plains": {"name": "Plains", "color": "#90EE90", "resources": ["grain", "horses"]},
-                "hills": {"name": "Hills", "color": "#DEB887", "resources": ["stone", "iron"]},
-                "mountains": {"name": "Mountains", "color": "#8B7355", "resources": ["stone", "iron", "gems"]},
-                "forests": {"name": "Forests", "color": "#228B22", "resources": ["wood", "herbs"]},
-                "swamps": {"name": "Swamps", "color": "#556B2F", "resources": ["herbs", "rare_materials"]},
-                "deserts": {"name": "Deserts", "color": "#F4A460", "resources": ["rare_minerals"]}
-            }
-        }
-        return jsonify(default_terrain)
+    terrain_types = ['plains', 'hills', 'mountains', 'forests', 'swamps', 'deserts']
+    return jsonify(terrain_types)
+
 
 @app.route('/api/race-types')
 def get_race_types():
     """Get available race types"""
-    try:
-        with open(os.path.join(CONFIG_DIR, 'race-types.json'), 'r') as f:
-            race_data = json.load(f)
-        return jsonify(race_data)
-    except FileNotFoundError:
-        # Return default race types if file doesn't exist
-        default_races = {
-            "races": {
-                "human": {
-                    "name": "Human",
-                    "preferred_terrain": ["plains", "hills"],
-                    "settlement_types": ["village", "town", "city"]
-                }
-            }
-        }
-        return jsonify(default_races)
+    race_types = ['human', 'elf', 'dwarf', 'orc']
+    return jsonify(race_types)
 
-@app.route('/api/settlement-names')
-def get_settlement_names():
-    """Get settlement name generation data"""
-    try:
-        with open(os.path.join(CONFIG_DIR, 'settlement-names.json'), 'r') as f:
-            name_data = json.load(f)
-        return jsonify(name_data)
-    except FileNotFoundError:
-        # Return basic name data if file doesn't exist
-        default_names = {
-            "name_components": {
-                "prefixes": ["Gold", "Silver", "Stone", "River", "Green", "White", "Red", "Iron", "Oak", "Pine"],
-                "middle_parts": ["vale", "ford", "wood", "haven", "ridge", "brook", "hill", "dale", "field", "grove"],
-                "suffixes": ["ton", "ham", "shire", "port", "burg", "keep", "peak", "wood", "dale", "crest"]
-            }
-        }
-        return jsonify(default_names)
-
-@app.route('/api/geographic-names')
-def get_geographic_names():
-    """Get geographic name generation data"""
-    try:
-        with open(os.path.join(CONFIG_DIR, 'geographic-names.json'), 'r') as f:
-            name_data = json.load(f)
-        return jsonify(name_data)
-    except FileNotFoundError:
-        # Return basic name data if file doesn't exist
-        default_names = {
-            "geographic_naming_styles": {
-                "fantasy": {
-                    "plains": {"prefixes": ["Golden", "Green"], "suffixes": ["Plains", "Fields"]},
-                    "hills": {"prefixes": ["Rolling", "Stone"], "suffixes": ["Hills", "Downs"]},
-                    "mountains": {"prefixes": ["Iron", "Storm"], "suffixes": ["Mountains", "Peaks"]},
-                    "forests": {"prefixes": ["Dark", "Ancient"], "suffixes": ["Wood", "Forest"]},
-                    "swamps": {"prefixes": ["Shadow", "Mist"], "suffixes": ["Marshes", "Swamps"]},
-                    "deserts": {"prefixes": ["Burning", "Red"], "suffixes": ["Desert", "Sands"]}
-                }
-            }
-        }
-        return jsonify(default_names)
-
-@app.route('/api/hex-movement/<int:x>/<int:y>', methods=['POST'])
-def get_hex_movement(x, y):
-    """Get movement information for a specific hex"""
-    try:
-        world_data = request.json
-        if not world_data:
-            return jsonify({"error": "World data required"}), 400
-        
-        movement_calc = MovementCalculator(CONFIG_DIR)
-        directions = movement_calc.calculate_all_directions(x, y, world_data)
-        
-        return jsonify({"directions": directions})
-        
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/generate-world', methods=['POST'])
-def generate_world():
-    """Generate a new world based on parameters"""
+def api_generate_world():
+    """Generate a new world"""
     try:
-        params = request.json
-        width = params.get('width', 5)
-        height = params.get('height', 5)
-        terrain_types = params.get('terrain_types', ['plains', 'hills', 'forests'])
-        population_density = params.get('population_density', 0.3)
+        data = request.get_json()
         
-        # Initialize name generators for this world
-        settlement_generator = SettlementNameGenerator(CONFIG_DIR)
-        settlement_generator.reset_used_names()
+        width = data.get('width', 5)
+        height = data.get('height', 5)
+        terrain_types = data.get('terrain_types', ['plains', 'hills', 'forests'])
+        race_types = data.get('race_types', ['human'])
+        params = data.get('params', {})
         
-        geographic_generator = GeographicNameGenerator(CONFIG_DIR)
-        geographic_generator.reset_used_names()
+        world_data = generate_world(width, height, terrain_types, race_types, params)
         
-        # Generate basic world data
-        world_data = {
-            "metadata": {
-                "name": f"Generated World {datetime.now().strftime('%Y%m%d_%H%M%S')}",
-                "size": {"width": width, "height": height},
-                "wrap": {"east_west": True, "north_south": False},
-                "generated_at": datetime.now().isoformat()
-            },
-            "hexes": {},
-            "population_centers": {}
-        }
-        
-        # Generate terrain for each hex
-        for y in range(height):
-            for x in range(width):
-                hex_id = f"{x},{y}"
-                terrain = random.choice(terrain_types)
-                world_data["hexes"][hex_id] = {
-                    "terrain": terrain,
-                    "resources": get_terrain_resources(terrain),
-                    "population_center": None,
-                    "location_id": generate_random_id(),
-                    "geographic_name": None  # Will be set after clustering
-                }
-        
-        # Find terrain clusters and assign geographic names
-        clusterer = TerrainClusterer(world_data)
-        clusters = clusterer.find_clusters()
-        
-        # Assign geographic names to clusters
-        for cluster_id, cluster_data in clusters.items():
-            terrain = cluster_data["terrain"]
-            geographic_name = geographic_generator.generate_geographic_name(terrain)
-            cluster_data["name"] = geographic_name
-            
-            # Update all hexes in this cluster
-            for hex_id in cluster_data["hexes"]:
-                world_data["hexes"][hex_id]["geographic_name"] = geographic_name
-        
-        # Add population centers with proper names
-        num_settlements = max(1, int(width * height * population_density))
-        placed_settlements = 0
-        attempts = 0
-        
-        while placed_settlements < num_settlements and attempts < 50:
-            x = random.randint(0, width - 1)
-            y = random.randint(0, height - 1)
-            hex_id = f"{x},{y}"
-            
-            # Don't place settlements on mountains or swamps
-            hex_terrain = world_data["hexes"][hex_id]["terrain"]
-            if hex_terrain not in ["mountains", "swamps"]:
-                if world_data["hexes"][hex_id]["population_center"] is None:
-                    settlement_id = f"settlement_{placed_settlements + 1}"
-                    settlement_type = "city" if placed_settlements == 0 else "village"
-                    
-                    # Generate proper settlement name
-                    settlement_name = settlement_generator.generate_name(hex_terrain, settlement_type)
-                    
-                    world_data["population_centers"][settlement_id] = {
-                        "hex": hex_id,
-                        "type": settlement_type,
-                        "race": "human",
-                        "population": 1000 if settlement_type == "city" else 500,
-                        "name": settlement_name
-                    }
-                    
-                    world_data["hexes"][hex_id]["population_center"] = {
-                        "type": settlement_type,
-                        "name": settlement_name,
-                        "population": 1000 if settlement_type == "city" else 500
-                    }
-                    placed_settlements += 1
-            
-            attempts += 1
+        # Store in session for movement calculations
+        session['current_world'] = world_data
         
         return jsonify(world_data)
         
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
-def generate_random_id():
-    """Generate random location ID like L1847"""
-    return f"L{random.randint(1000, 9999)}"
 
 @app.route('/api/save-world', methods=['POST'])
 def save_world():
     """Save world data to file"""
     try:
-        world_data = request.json
-        world_name = world_data.get('metadata', {}).get('name', 'unnamed_world')
-        filename = f"{world_name.replace(' ', '_').lower()}.json"
-        filepath = os.path.join(WORLD_DATA_DIR, filename)
+        data = request.get_json()
+        world_data = data.get('world_data')
+        filename = data.get('filename', f'world_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json')
         
+        if not filename.endswith('.json'):
+            filename += '.json'
+        
+        filepath = os.path.join('worlds', filename)
         with open(filepath, 'w') as f:
             json.dump(world_data, f, indent=2)
         
-        return jsonify({"message": "World saved successfully", "filename": filename})
+        return jsonify({'success': True, 'filename': filename})
         
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/load-world/<filename>')
 def load_world(filename):
     """Load world data from file"""
     try:
-        filepath = os.path.join(WORLD_DATA_DIR, filename)
+        filepath = os.path.join('worlds', filename)
         with open(filepath, 'r') as f:
             world_data = json.load(f)
+        
+        # Store in session for movement calculations
+        session['current_world'] = world_data
+        
         return jsonify(world_data)
         
-    except FileNotFoundError:
-        return jsonify({"error": "World file not found"}), 404
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/list-worlds')
 def list_worlds():
     """List all saved world files"""
     try:
-        world_files = [f for f in os.listdir(WORLD_DATA_DIR) if f.endswith('.json')]
-        return jsonify({"worlds": world_files})
+        world_files = [f for f in os.listdir('worlds') if f.endswith('.json')]
+        return jsonify(world_files)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
-def get_terrain_resources(terrain_type):
-    """Get default resources for a terrain type"""
-    terrain_resources = {
-        "plains": ["grain", "horses"],
-        "hills": ["stone", "iron"],
-        "mountains": ["stone", "iron", "gems"],
-        "forests": ["wood", "herbs"],
-        "swamps": ["herbs", "rare_materials"],
-        "deserts": ["rare_minerals"]
-    }
-    return terrain_resources.get(terrain_type, [])
+
+@app.route('/api/hex-movement/<int:x>/<int:y>', methods=['GET'])
+def get_hex_movement(x, y):
+    """Get movement data for a specific hex"""
+    try:
+        # Get the world data from session
+        world_data = session.get('current_world')
+        if not world_data:
+            return jsonify({'error': 'No world data available'}), 400
+        
+        calculator = MovementCalculator()
+        directions = calculator.calculate_all_directions(x, y, world_data)
+        
+        return jsonify({
+            'coordinates': {'x': x, 'y': y},
+            'directions': directions
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
-    # Use environment variable for port (required by Render)
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(debug=True)
