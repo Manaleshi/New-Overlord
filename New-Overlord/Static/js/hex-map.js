@@ -78,46 +78,65 @@ class HexMap {
         }
     }
     
-    renderHex(x, y) {
-        const hexData = this.worldData.hexes[`${x},${y}`];
-        if (!hexData) return;
+   renderHex(x, y) {
+    const hexData = this.worldData.hexes[`${x},${y}`];
+    if (!hexData) return;
+    
+    const position = this.calculateHexPosition(x, y);
+    
+    // Create hex element
+    const hexElement = document.createElement('div');
+    hexElement.className = `hex terrain-${hexData.terrain}`;
+    hexElement.style.position = 'absolute';
+    hexElement.style.left = `${position.x - this.hexSize/2}px`;
+    hexElement.style.top = `${position.y - this.hexSize/2}px`;
+    hexElement.style.width = `${this.hexSize}px`;
+    hexElement.style.height = `${this.hexSize}px`;
+    hexElement.style.cursor = 'pointer';
+    
+    // Add coordinates as data attributes
+    hexElement.dataset.x = x;
+    hexElement.dataset.y = y;
+    
+    // Add click handler
+    hexElement.addEventListener('click', (e) => {
+        if (this.editMode) {
+            this.handleTerrainEdit(e);
+        } else {
+            this.selectHex(x, y);
+        }
+    });
+    
+    // Add hex content
+    const content = document.createElement('div');
+    content.className = 'hex-content';
+    
+    // Build content with settlement icon if present
+    let hexContent = `
+        <div class="hex-coords">${x},${y}</div>
+        <div class="hex-terrain">${hexData.terrain}</div>
+    `;
+    
+    // Add settlement icon if settlement exists
+    if (hexData.population_center) {
+        const settlementType = hexData.population_center.type;
+        let icon = '🏘️'; // village default
         
-        const position = this.calculateHexPosition(x, y);
+        if (settlementType === 'city') {
+            icon = '🏙️';
+        } else if (settlementType === 'town') {
+            icon = '🏘️';
+        } else {
+            icon = '🏠'; // village
+        }
         
-        // Create hex element
-        const hexElement = document.createElement('div');
-        hexElement.className = `hex terrain-${hexData.terrain}`;
-        hexElement.style.position = 'absolute';
-        hexElement.style.left = `${position.x - this.hexSize/2}px`;
-        hexElement.style.top = `${position.y - this.hexSize/2}px`;
-        hexElement.style.width = `${this.hexSize}px`;
-        hexElement.style.height = `${this.hexSize}px`;
-        hexElement.style.cursor = 'pointer';
-        
-        // Add coordinates as data attributes
-        hexElement.dataset.x = x;
-        hexElement.dataset.y = y;
-        
-        // Add click handler
-        hexElement.addEventListener('click', (e) => {
-            if (this.editMode) {
-                this.handleTerrainEdit(e);
-            } else {
-                this.selectHex(x, y);
-            }
-        });
-        
-        // Add hex content
-        const content = document.createElement('div');
-        content.className = 'hex-content';
-        content.innerHTML = `
-            <div class="hex-coords">${x},${y}</div>
-            <div class="hex-terrain">${hexData.terrain}</div>
-        `;
-        
-        hexElement.appendChild(content);
-        this.container.appendChild(hexElement);
+        hexContent += `<div class="settlement-icon">${icon}</div>`;
     }
+    
+    content.innerHTML = hexContent;
+    hexElement.appendChild(content);
+    this.container.appendChild(hexElement);
+}
     
     async selectHex(x, y) {
         // Remove previous selection
