@@ -29,19 +29,23 @@ class HexMap {
     
     calculateHexPosition(x, y) {
     /**
-     * Calculate positions for POINTY-TOP hexagonal layout
+     * Calculate positions for VERTICAL COLUMN hexagonal layout
      * 
-     * In this layout:
-     * - Hexes are arranged in columns
-     * - Even columns (x=0,2,4...) are shifted DOWN by half a hex height
-     * - Odd columns (x=1,3,5...) are at normal position
+     * Layout:
+     * 0     0
+     *   0     0  
+     * 0     0
+     *   0     0
+     * 
+     * - Even columns (x=0,2,4...) are at normal position
+     * - Odd columns (x=1,3,5...) are shifted DOWN by half a hex height
      */
     
-    // Base position
+    // Horizontal spacing between columns
     const posX = x * (this.hexSpacing * 0.75) + this.hexSize;
     
-    // Offset for even columns (shift down)
-    const offsetY = (x % 2) * (this.hexSpacing / 2);
+    // Vertical position with offset for odd columns
+    const offsetY = (x % 2) * (this.hexSpacing / 2); // Odd columns shifted down
     const posY = y * this.hexSpacing + offsetY + this.hexSize;
     
     return { x: posX, y: posY };
@@ -53,25 +57,25 @@ class HexMap {
     }
     
     render() {
-        if (!this.worldData) return;
-        
-        const { width, height } = this.worldData.metadata.size;
-        
-        // Calculate container size for proper hex layout
-        const containerWidth = width * this.hexSpacing + this.hexSpacing + 100;
-        const containerHeight = height * (this.hexSpacing * 0.75) + this.hexSpacing + 100;
-        
-        this.container.innerHTML = '';
-        this.container.style.width = `${containerWidth}px`;
-        this.container.style.height = `${containerHeight}px`;
-        this.container.style.position = 'relative';
-        
-        // Render each hex
+    if (!this.worldData) return;
+    
+    const { width, height } = this.worldData.metadata.size;
+    
+    // Calculate container size for vertical column layout
+    const containerWidth = width * (this.hexSpacing * 0.75) + this.hexSpacing + 100;
+    const containerHeight = height * this.hexSpacing + (this.hexSpacing / 2) + 100;
+    
+    this.container.innerHTML = '';
+    this.container.style.width = `${containerWidth}px`;
+    this.container.style.height = `${containerHeight}px`;
+    this.container.style.position = 'relative';
+    
+    // Render each hex - iterate by columns first, then rows
+    for (let x = 0; x < width; x++) {
         for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                this.renderHex(x, y);
-            }
+            this.renderHex(x, y);
         }
+    }
     }
     
     renderHex(x, y) {
