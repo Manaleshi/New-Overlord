@@ -8,7 +8,7 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = 'overlord_secret_key_change_in_production'
 
-# Ensure directories exist
+# Ensure directories exist -added
 os.makedirs('config', exist_ok=True)
 os.makedirs('worlds', exist_ok=True)
 
@@ -575,3 +575,4 @@ if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
