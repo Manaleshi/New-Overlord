@@ -2,30 +2,30 @@
  * HexMap - Interactive hex grid display and manipulation
  */
 class HexMap {
-constructor(containerId) {
-    this.container = document.getElementById(containerId);
-    this.worldData = null;
-    this.selectedHex = null;
-    
-    // Hex display constants for vertical layout - BIGGER HEXES
-    this.hexSize = 50;      // Increased from 40
-    this.hexSpacing = 55;   // Increased from 45
-    
-    // Proper hexagonal directions in display order
-    this.directionOrder = ['N', 'NE', 'SE', 'S', 'SW', 'NW'];
-    this.directionNames = {
-        'N': 'North',
-        'NE': 'Northeast', 
-        'SE': 'Southeast',
-        'S': 'South',
-        'SW': 'Southwest',
-        'NW': 'Northwest'
-    };
-    
-    // Edit mode state
-    this.editMode = false;
-    this.editTerrain = null;
-}
+    constructor(containerId) {
+        this.container = document.getElementById(containerId);
+        this.worldData = null;
+        this.selectedHex = null;
+        
+        // Hex display constants for vertical layout - BIGGER HEXES
+        this.hexSize = 50;      // Increased from 40
+        this.hexSpacing = 55;   // Increased from 45
+        
+        // Proper hexagonal directions in display order
+        this.directionOrder = ['N', 'NE', 'SE', 'S', 'SW', 'NW'];
+        this.directionNames = {
+            'N': 'North',
+            'NE': 'Northeast', 
+            'SE': 'Southeast',
+            'S': 'South',
+            'SW': 'Southwest',
+            'NW': 'Northwest'
+        };
+        
+        // Edit mode state
+        this.editMode = false;
+        this.editTerrain = null;
+    }
     
     calculateHexPosition(x, y) {
         /**
@@ -78,65 +78,65 @@ constructor(containerId) {
         }
     }
     
-   renderHex(x, y) {
-    const hexData = this.worldData.hexes[`${x},${y}`];
-    if (!hexData) return;
-    
-    const position = this.calculateHexPosition(x, y);
-    
-    // Create hex element
-    const hexElement = document.createElement('div');
-    hexElement.className = `hex terrain-${hexData.terrain}`;
-    hexElement.style.position = 'absolute';
-    hexElement.style.left = `${position.x - this.hexSize/2}px`;
-    hexElement.style.top = `${position.y - this.hexSize/2}px`;
-    hexElement.style.width = `${this.hexSize}px`;
-    hexElement.style.height = `${this.hexSize}px`;
-    hexElement.style.cursor = 'pointer';
-    
-    // Add coordinates as data attributes
-    hexElement.dataset.x = x;
-    hexElement.dataset.y = y;
-    
-    // Add click handler
-    hexElement.addEventListener('click', (e) => {
-        if (this.editMode) {
-            this.handleTerrainEdit(e);
-        } else {
-            this.selectHex(x, y);
-        }
-    });
-    
-    // Add hex content
-    const content = document.createElement('div');
-    content.className = 'hex-content';
-    
-    // Build content with settlement icon if present
-    let hexContent = `
-        <div class="hex-coords">${x},${y}</div>
-        <div class="hex-terrain">${hexData.terrain}</div>
-    `;
-    
-    // Add settlement icon if settlement exists
-    if (hexData.population_center) {
-        const settlementType = hexData.population_center.type;
-        let icon = '🏘️'; // village default
+    renderHex(x, y) {
+        const hexData = this.worldData.hexes[`${x},${y}`];
+        if (!hexData) return;
         
-        if (settlementType === 'city') {
-            icon = '🏙️';
-        } else if (settlementType === 'town') {
-            icon = '🏘️';
-        } else {
-            icon = '🏠'; // village
+        const position = this.calculateHexPosition(x, y);
+        
+        // Create hex element
+        const hexElement = document.createElement('div');
+        hexElement.className = `hex terrain-${hexData.terrain}`;
+        hexElement.style.position = 'absolute';
+        hexElement.style.left = `${position.x - this.hexSize/2}px`;
+        hexElement.style.top = `${position.y - this.hexSize/2}px`;
+        hexElement.style.width = `${this.hexSize}px`;
+        hexElement.style.height = `${this.hexSize}px`;
+        hexElement.style.cursor = 'pointer';
+        
+        // Add coordinates as data attributes
+        hexElement.dataset.x = x;
+        hexElement.dataset.y = y;
+        
+        // Add click handler
+        hexElement.addEventListener('click', (e) => {
+            if (this.editMode) {
+                this.handleTerrainEdit(e);
+            } else {
+                this.selectHex(x, y);
+            }
+        });
+        
+        // Add hex content
+        const content = document.createElement('div');
+        content.className = 'hex-content';
+        
+        // Build content with settlement icon if present
+        let hexContent = `
+            <div class="hex-coords">${x},${y}</div>
+            <div class="hex-terrain">${hexData.terrain}</div>
+        `;
+        
+        // Add settlement icon if settlement exists
+        if (hexData.population_center) {
+            const settlementType = hexData.population_center.type;
+            let icon = '🏘️'; // village default
+            
+            if (settlementType === 'city') {
+                icon = '🏙️';
+            } else if (settlementType === 'town') {
+                icon = '🏘️';
+            } else {
+                icon = '🏠'; // village
+            }
+            
+            hexContent += `<div class="settlement-icon">${icon}</div>`;
         }
         
-        hexContent += `<div class="settlement-icon">${icon}</div>`;
+        content.innerHTML = hexContent;
+        hexElement.appendChild(content);
+        this.container.appendChild(hexElement);
     }
-    
-    content.innerHTML = hexContent;
-    hexElement.appendChild(content);
-    this.container.appendChild(hexElement);
-}
     
     async selectHex(x, y) {
         // Remove previous selection
@@ -286,18 +286,71 @@ constructor(containerId) {
                 hex.classList.add('selected');
             }
             
-            // Update hex content
-            const terrainDiv = hex.querySelector('.hex-terrain');
-            if (terrainDiv) {
-                terrainDiv.textContent = this.editTerrain;
-            }
+            // Update hex content (including settlement icon if present)
+            this.updateHexVisual(hex, x, y);
             
             console.log(`Changed hex (${x},${y}) from ${oldTerrain} to ${this.editTerrain}`);
             
-            // If this hex is selected, update the info panel
+            // If this hex is selected, update the info panel immediately
             if (this.selectedHex && this.selectedHex.x === x && this.selectedHex.y === y) {
                 this.displayHexDetails(x, y);
             }
+            
+            // Update the world data in the backend session
+            this.updateWorldDataInBackend();
+        }
+    }
+    
+    updateHexVisual(hexElement, x, y) {
+        const hexData = this.worldData.hexes[`${x},${y}`];
+        if (!hexData) return;
+        
+        // Update hex content including settlement icon
+        const content = hexElement.querySelector('.hex-content');
+        if (content) {
+            let hexContent = `
+                <div class="hex-coords">${x},${y}</div>
+                <div class="hex-terrain">${hexData.terrain}</div>
+            `;
+            
+            // Add settlement icon if settlement exists
+            if (hexData.population_center) {
+                const settlementType = hexData.population_center.type;
+                let icon = '🏘️'; // village default
+                
+                if (settlementType === 'city') {
+                    icon = '🏙️';
+                } else if (settlementType === 'town') {
+                    icon = '🏘️';
+                } else {
+                    icon = '🏠'; // village
+                }
+                
+                hexContent += `<div class="settlement-icon">${icon}</div>`;
+            }
+            
+            content.innerHTML = hexContent;
+        }
+    }
+    
+    async updateWorldDataInBackend() {
+        // Send updated world data to backend so movement calculations reflect changes
+        try {
+            const response = await fetch('/api/update-world-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    world_data: this.worldData
+                })
+            });
+            
+            if (!response.ok) {
+                console.warn('Failed to update world data in backend');
+            }
+        } catch (error) {
+            console.warn('Error updating world data in backend:', error);
         }
     }
     
