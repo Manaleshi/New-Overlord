@@ -274,14 +274,16 @@ class SettlementNameGenerator:
 class GeographicNameGenerator:
     def __init__(self, config_dir='config'):
         self.config_dir = config_dir
-        self.name_data = self.load_geographic_names()
         self.used_names = set()
+        try:
+            self.name_data = self.load_geographic_names()
+        except Exception as e:
+            print(f"Error loading geographic names: {e}")
+            self.name_data = self.get_default_names()
     
-    def load_geographic_names(self):
-        """Load geographic naming configuration"""
-        config_file = os.path.join(self.config_dir, 'geographic-names.json')
-        
-        default_names = {
+    def get_default_names(self):
+        """Get default geographic naming data"""
+        return {
             "terrain_name_patterns": {
                 "plains": {
                     "adjectives": ["Golden", "Wide", "Vast", "Rolling", "Windswept", "Endless", "Green", "Fertile"],
@@ -309,18 +311,65 @@ class GeographicNameGenerator:
                 }
             }
         }
+    
+    def load_geographic_names(self):
+        """Load geographic naming configuration"""
+        config_file = os.path.join(self.config_dir, 'geographic-names.json')
+        
+        default_names = self.get_default_names()
         
         if os.path.exists(config_file):
             try:
                 with open(config_file, 'r') as f:
-                    return json.load(f)
-            except:
-                pass
+                    loaded_data = json.load(f)
+                    # Validate that required keys exist
+                    if 'terrain_name_patterns' in loaded_data:
+                        return loaded_data
+                    else:
+                        print("Invalid geographic names config, using defaults")
+                        return default_names
+            except Exception as e:
+                print(f"Error reading geographic names config: {e}, using defaults")
+                return default_names
         
-        with open(config_file, 'w') as f:
-            json.dump(default_names, f, indent=2)
+        # Create default config file
+        try:
+            with open(config_file, 'w') as f:
+                json.dump(default_names, f, indent=2)
+            print(f"Created default geographic names config at {config_file}")
+        except Exception as e:
+            print(f"Warning: Could not create config file {config_file}: {e}")
         
         return default_names
+    
+    def generate_geographic_name(self, terrain):
+        """Generate a geographic name for a terrain cluster"""
+        try:
+            # Check if terrain exists in patterns
+            if terrain not in self.name_data.get('terrain_name_patterns', {}):
+                terrain = 'plains'  # fallback
+            
+            pattern_data = self.name_data['terrain_name_patterns'][terrain]
+            
+            max_attempts = 20
+            for _ in range(max_attempts):
+                adjective = random.choice(pattern_data['adjectives'])
+                noun = random.choice(pattern_data['nouns'])
+                name = f"{adjective} {noun}"
+                
+                if name not in self.used_names:
+                    self.used_names.add(name)
+                    return name
+            
+            # Fallback if all names are used
+            adjective = random.choice(pattern_data['adjectives'])
+            noun = random.choice(pattern_data['nouns'])
+            return f"{adjective} {noun} {random.randint(1, 999)}"
+            
+        except Exception as e:
+            print(f"Error generating geographic name for {terrain}: {e}")
+            # Ultimate fallback
+            return f"{terrain.title()} Region {random.randint(1, 999)}"
     
     def generate_geographic_name(self, terrain):
         """Generate a geographic name for a terrain cluster"""
@@ -576,5 +625,6 @@ if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
