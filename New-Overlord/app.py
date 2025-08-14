@@ -13,19 +13,7 @@ os.makedirs('config', exist_ok=True)
 os.makedirs('worlds', exist_ok=True)
 
 def get_hex_neighbors(x, y, width, height, wrap_east_west=True):
-    """
-    Hex neighbors for VERTICAL COLUMN layout:
-    
-    0     0
-      0     0  
-    0     0
-      0     0
-    0     0
-    
-    This is "odd-q" offset coordinates where:
-    - Even columns (x=0,2,4...) are at normal position
-    - Odd columns (x=1,3,5...) are shifted DOWN by half a hex
-    """
+   
     
     neighbors = {}
     
@@ -573,6 +561,7 @@ def get_hex_movement(x, y):
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
