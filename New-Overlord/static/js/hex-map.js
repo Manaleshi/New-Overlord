@@ -1,9 +1,15 @@
-/**
- * HexMap - Interactive hex grid display and manipulation
- */
 class HexMap {
     constructor(containerId, width = 5, height = 5) {
+        console.log(`HexMap constructor called with containerId: ${containerId}`);
+        
         this.container = document.getElementById(containerId);
+        if (!this.container) {
+            console.error(`Container element '${containerId}' not found!`);
+            throw new Error(`Container element '${containerId}' not found`);
+        }
+        
+        console.log('Container element found:', this.container);
+        
         this.width = width;
         this.height = height;
         this.hexSize = 30;
@@ -11,6 +17,7 @@ class HexMap {
         this.selectedHex = null;
         this.editMode = false;
         this.selectedTerrain = 'plains';
+        this.initialized = false;
         
         this.terrainColors = {
             'plains': '#90EE90',
@@ -22,38 +29,70 @@ class HexMap {
             'water': '#4682B4'
         };
         
-        this.init();
+        try {
+            this.init();
+            this.initialized = true;
+            console.log('HexMap initialization successful');
+        } catch (error) {
+            console.error('HexMap initialization failed:', error);
+            throw error;
+        }
     }
     
     init() {
-        this.container.innerHTML = `
-            <div class="hex-map-container">
-                <div class="hex-grid" id="hex-grid"></div>
-                <div class="hex-info-panel" id="hex-info">
-                    <h3>Hex Information</h3>
-                    <div id="hex-details">Select a hex to view details</div>
+        console.log('HexMap init() called');
+        
+        try {
+            this.container.innerHTML = `
+                <div class="hex-map-container">
+                    <div class="hex-grid" id="hex-grid"></div>
+                    <div class="hex-info-panel" id="hex-info">
+                        <h3>Hex Information</h3>
+                        <div id="hex-details">Select a hex to view details</div>
+                    </div>
                 </div>
-            </div>
-        `;
-        
-        this.hexGrid = document.getElementById('hex-grid');
-        this.hexInfo = document.getElementById('hex-info');
-        this.hexDetails = document.getElementById('hex-details');
-        
-        this.createGrid();
+            `;
+            
+            this.hexGrid = document.getElementById('hex-grid');
+            this.hexInfo = document.getElementById('hex-info');
+            this.hexDetails = document.getElementById('hex-details');
+            
+            if (!this.hexGrid || !this.hexInfo || !this.hexDetails) {
+                throw new Error('Failed to create required DOM elements');
+            }
+            
+            console.log('DOM elements created successfully');
+            
+            this.createGrid();
+            console.log('Grid created successfully');
+            
+        } catch (error) {
+            console.error('Error in HexMap init:', error);
+            throw error;
+        }
     }
     
     createGrid() {
+        console.log(`Creating grid: ${this.width}x${this.height}`);
+        
+        if (!this.hexGrid) {
+            throw new Error('hexGrid element not available');
+        }
+        
         this.hexGrid.innerHTML = '';
         this.hexGrid.style.position = 'relative';
         this.hexGrid.style.width = `${this.width * this.hexSize * 1.8}px`;
         this.hexGrid.style.height = `${this.height * this.hexSize * 1.8}px`;
+        this.hexGrid.style.border = '1px solid #ccc';
+        this.hexGrid.style.backgroundColor = '#f9f9f9';
         
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
                 this.createHex(x, y);
             }
         }
+        
+        console.log(`Grid created with ${this.width * this.height} hexes`);
     }
     
     createHex(x, y) {
@@ -82,23 +121,50 @@ class HexMap {
         hex.style.fontSize = '10px';
         hex.style.textAlign = 'center';
         hex.style.backgroundColor = this.terrainColors['plains'];
-        
-        // Create hexagonal shape with CSS
         hex.style.borderRadius = '50%';
         hex.style.transform = 'rotate(0deg)';
         
-        hex.addEventListener('click', () => this.selectHex(x, y));
+        hex.innerHTML = `
+            <div style="text-align: center; line-height: 1.1;">
+                <div style="font-weight: bold; font-size: 8px;">plains</div>
+                <div style="font-size: 7px;">${x},${y}</div>
+            </div>
+        `;
+        
+        hex.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log(`Hex clicked: ${x},${y}`);
+            this.selectHex(x, y);
+        });
         
         this.hexGrid.appendChild(hex);
     }
     
     loadWorldData(worldData) {
+        console.log('Loading world data into HexMap:', worldData);
+        
+        if (!this.initialized) {
+            console.error('HexMap not initialized, cannot load world data');
+            return;
+        }
+        
+        if (!worldData || !worldData.hexes) {
+            console.error('Invalid world data provided');
+            return;
+        }
+        
         this.worldData = worldData;
         this.updateDisplay();
+        console.log('World data loaded successfully');
     }
     
     updateDisplay() {
-        if (!this.worldData) return;
+        if (!this.worldData || !this.initialized) {
+            console.log('Cannot update display - missing data or not initialized');
+            return;
+        }
+        
+        console.log('Updating hex display...');
         
         // Update each hex with world data
         for (let y = 0; y < this.height; y++) {
@@ -114,16 +180,30 @@ class HexMap {
                             <div style="font-size: 7px;">${x},${y}</div>
                         </div>
                     `;
+                } else if (hex) {
+                    // Default display for missing data
+                    hex.style.backgroundColor = this.terrainColors['plains'];
+                    hex.innerHTML = `
+                        <div style="text-align: center; line-height: 1.1;">
+                            <div style="font-weight: bold; font-size: 8px;">unknown</div>
+                            <div style="font-size: 7px;">${x},${y}</div>
+                        </div>
+                    `;
                 }
             }
         }
+        
+        console.log('Display update complete');
     }
     
     getHexElement(x, y) {
+        if (!this.hexGrid) return null;
         return this.hexGrid.querySelector(`[data-x="${x}"][data-y="${y}"]`);
     }
     
     selectHex(x, y) {
+        console.log(`Selecting hex: ${x},${y}`);
+        
         // Clear previous selection
         if (this.selectedHex) {
             this.selectedHex.style.boxShadow = 'none';
@@ -134,10 +214,14 @@ class HexMap {
         if (hex) {
             hex.style.boxShadow = '0 0 10px 3px #FF6B6B';
             this.selectedHex = hex;
+            console.log('Hex selected successfully');
+        } else {
+            console.error(`Could not find hex element at ${x},${y}`);
         }
         
         // Handle edit mode
         if (this.editMode && this.worldData) {
+            console.log(`Edit mode: changing hex ${x},${y} to ${this.selectedTerrain}`);
             this.changeHexTerrain(x, y, this.selectedTerrain);
         }
         
@@ -149,10 +233,14 @@ class HexMap {
     }
     
     changeHexTerrain(x, y, newTerrain) {
-        if (!this.worldData) return;
+        if (!this.worldData) {
+            console.log('No world data available for terrain change');
+            return;
+        }
         
         const hexData = this.worldData.hexes[`${x},${y}`];
         if (hexData) {
+            console.log(`Changing hex ${x},${y} terrain from ${hexData.terrain} to ${newTerrain}`);
             hexData.terrain = newTerrain;
             
             // Update resources based on new terrain
@@ -194,16 +282,23 @@ class HexMap {
     }
     
     displayHexInfo(x, y) {
+        if (!this.hexDetails) {
+            console.error('hexDetails element not available');
+            return;
+        }
+        
         if (!this.worldData) {
-            this.hexDetails.innerHTML = 'No world data loaded';
+            this.hexDetails.innerHTML = '<p>No world data loaded</p>';
             return;
         }
         
         const hexData = this.worldData.hexes[`${x},${y}`];
         if (!hexData) {
-            this.hexDetails.innerHTML = 'No data for this hex';
+            this.hexDetails.innerHTML = '<p>No data for this hex</p>';
             return;
         }
+        
+        console.log(`Displaying info for hex ${x},${y}:`, hexData);
         
         let infoHTML = `
             <div class="hex-info-content">
@@ -271,16 +366,25 @@ class HexMap {
     
     async loadMovementData(x, y) {
         try {
+            console.log(`Loading movement data for hex ${x},${y}`);
             const response = await fetch(`/api/hex-movement/${x}/${y}`);
             if (response.ok) {
                 const data = await response.json();
+                console.log('Movement data received:', data);
                 this.displayMovementDirections(data.directions);
             } else {
-                document.getElementById('movement-details').innerHTML = 'Movement data unavailable';
+                console.log('Movement data unavailable');
+                const movementDetails = document.getElementById('movement-details');
+                if (movementDetails) {
+                    movementDetails.innerHTML = 'Movement data unavailable';
+                }
             }
         } catch (error) {
             console.error('Error loading movement data:', error);
-            document.getElementById('movement-details').innerHTML = 'Error loading movement data';
+            const movementDetails = document.getElementById('movement-details');
+            if (movementDetails) {
+                movementDetails.innerHTML = 'Error loading movement data';
+            }
         }
     }
     
@@ -317,14 +421,17 @@ class HexMap {
     }
     
     setEditMode(enabled, selectedTerrain = 'plains') {
+        console.log(`Setting edit mode: ${enabled}, terrain: ${selectedTerrain}`);
         this.editMode = enabled;
         this.selectedTerrain = selectedTerrain;
         
         // Update cursor style
-        const hexes = this.hexGrid.querySelectorAll('.hex');
-        hexes.forEach(hex => {
-            hex.style.cursor = enabled ? 'crosshair' : 'pointer';
-        });
+        if (this.hexGrid) {
+            const hexes = this.hexGrid.querySelectorAll('.hex');
+            hexes.forEach(hex => {
+                hex.style.cursor = enabled ? 'crosshair' : 'pointer';
+            });
+        }
     }
     
     async updateWorldDataInSession() {
@@ -350,21 +457,56 @@ class HexMap {
     }
     
     resize(newWidth, newHeight) {
+        console.log(`Resizing HexMap to ${newWidth}x${newHeight}`);
+        
+        if (!this.initialized) {
+            console.error('Cannot resize - HexMap not initialized');
+            return;
+        }
+        
         this.width = newWidth;
         this.height = newHeight;
         this.createGrid();
         if (this.worldData) {
             this.updateDisplay();
         }
+        
+        console.log('Resize complete');
     }
     
     exportWorldData() {
         return this.worldData;
     }
+    
+    isInitialized() {
+        return this.initialized;
+    }
 }
 
 // CSS styles for economic information display
 const economicStyles = `
+    .hex-map-container {
+        display: flex;
+        gap: 20px;
+        margin: 20px 0;
+    }
+    
+    .hex-grid {
+        border: 2px solid #333;
+        background-color: #f9f9f9;
+        min-height: 300px;
+        flex: 1;
+    }
+    
+    .hex-info-panel {
+        width: 300px;
+        border: 2px solid #333;
+        padding: 15px;
+        background-color: #fff;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    
     .economic-info {
         background-color: #f5f5f5;
         border: 1px solid #ddd;
@@ -445,3 +587,5 @@ if (!document.getElementById('economic-styles')) {
     styleSheet.textContent = economicStyles;
     document.head.appendChild(styleSheet);
 }
+
+console.log('HexMap class loaded successfully');
