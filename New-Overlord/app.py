@@ -370,6 +370,149 @@ class GeographicNameGenerator:
             # Ultimate fallback
             return f"{terrain.title()} Region {random.randint(1, 999)}"
 
+class EconomicCalculator:
+    def __init__(self):
+        # Base wage ranges
+        self.rural_wage_range = (11, 13)
+        self.settlement_wage_ranges = {
+            'village': (13, 14),
+            'town': (14, 15),
+            'city': (15, 16)
+        }
+        
+        # Tax rates per person
+        self.tax_rates = {
+            'rural': 1.5,
+            'village': 2.0,
+            'town': 2.5,
+            'city': 3.0
+        }
+    
+    def calculate_rural_wages(self, rural_population, terrain):
+        """Calculate wages for rural hex population"""
+        min_wage, max_wage = self.rural_wage_range
+        
+        # Terrain modifiers
+        terrain_modifiers = {
+            'plains': 0,      # Standard farming wages
+            'hills': 0,       # Standard mining wages  
+            'forests': -1,    # Harder to make money in forests
+            'mountains': -1,  # Remote, difficult terrain
+            'swamps': -1,     # Harsh conditions
+            'deserts': -1     # Harsh conditions
+        }
+        
+        modifier = terrain_modifiers.get(terrain, 0)
+        
+        # Population density effect (more people = more competition = lower wages)
+        if rural_population > 250:
+            modifier -= 1  # High rural population = lower wages
+        elif rural_population < 100:
+            modifier += 1  # Low rural population = higher wages
+        
+        # Calculate final wage within bounds
+        base_wage = random.randint(min_wage, max_wage)
+        final_wage = max(11, min(13, base_wage + modifier))
+        
+        return final_wage
+    
+    def calculate_settlement_wages(self, settlement_type, settlement_population):
+        """Calculate wages for settlement population"""
+        min_wage, max_wage = self.settlement_wage_ranges[settlement_type]
+        
+        # Settlement size effect within type
+        if settlement_type == 'village':
+            # Villages: population affects wages less
+            if settlement_population > 350:
+                modifier = -1
+            elif settlement_population < 250:
+                modifier = 1
+            else:
+                modifier = 0
+        elif settlement_type == 'town':
+            # Towns: more variation based on size
+            if settlement_population > 1200:
+                modifier = 1   # Large towns pay better
+            elif settlement_population < 600:
+                modifier = -1  # Small towns pay less
+            else:
+                modifier = 0
+        else:  # city
+            # Cities: larger cities pay better
+            if settlement_population > 4000:
+                modifier = 1   # Major cities pay top wages
+            elif settlement_population < 2000:
+                modifier = -1  # Smaller cities pay less
+            else:
+                modifier = 0
+        
+        # Calculate final wage within bounds
+        base_wage = random.randint(min_wage, max_wage)
+        final_wage = max(min_wage, min(max_wage, base_wage + modifier))
+        
+        return final_wage
+    
+    def calculate_rural_taxes(self, rural_population):
+        """Calculate tax revenue from rural population"""
+        tax_per_person = self.tax_rates['rural']
+        return int(rural_population * tax_per_person)
+    
+    def calculate_settlement_taxes(self, settlement_type, settlement_population):
+        """Calculate tax revenue from settlement"""
+        tax_per_person = self.tax_rates[settlement_type]
+        return int(settlement_population * tax_per_person)
+    
+    def calculate_hex_economics(self, hex_data):
+        """Calculate complete economic data for a hex"""
+        rural_population = hex_data['population']
+        terrain = hex_data['terrain']
+        
+        # Calculate rural economics
+        rural_wages = self.calculate_rural_wages(rural_population, terrain)
+        rural_taxes = self.calculate_rural_taxes(rural_population)
+        
+        economics = {
+            'rural': {
+                'population': rural_population,
+                'wages': rural_wages,
+                'taxes': rural_taxes
+            }
+        }
+        
+        # Calculate settlement economics if present
+        if hex_data.get('population_center'):
+            settlement = hex_data['population_center']
+            settlement_type = settlement['type']
+            settlement_population = settlement['population']
+            
+            # Adjust rural population (subtract spillover that was added)
+            spillover = int(settlement_population * 0.03)
+            actual_rural_population = rural_population - spillover
+            
+            # Recalculate rural with correct population
+            rural_wages = self.calculate_rural_wages(actual_rural_population, terrain)
+            rural_taxes = self.calculate_rural_taxes(actual_rural_population)
+            
+            # Calculate settlement economics
+            settlement_wages = self.calculate_settlement_wages(settlement_type, settlement_population)
+            settlement_taxes = self.calculate_settlement_taxes(settlement_type, settlement_population)
+            
+            economics = {
+                'rural': {
+                    'population': actual_rural_population,
+                    'wages': rural_wages,
+                    'taxes': rural_taxes
+                },
+                'settlement': {
+                    'name': settlement['name'],
+                    'type': settlement_type,
+                    'population': settlement_population,
+                    'wages': settlement_wages,
+                    'taxes': settlement_taxes
+                }
+            }
+        
+        return economics
 
 def generate_terrain_for_hex(x, y, terrain_types, params):
     """Generate terrain for a specific hex coordinate"""
@@ -651,6 +794,7 @@ if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
