@@ -600,14 +600,38 @@ def add_settlements(world_data, params):
             settlement_name = name_generator.generate_settlement_name(hex_data['terrain'], settlement_type)
             settlement_bonus = settlement_bonuses[settlement_type]
             
-            # Add spillover effect to rural population (5% of settlement)
-            spillover = int(settlement_bonus * 0.03)  # 5% spillover
-            hex_data['population'] += settlement_bonus + spillover
+            # Add spillover effect to rural population (3% of settlement)
+            spillover = int(settlement_bonus * 0.03)
+            hex_data['population'] += spillover  # Only add spillover to rural population
                        
             hex_data['population_center'] = {
                 'name': settlement_name,
                 'type': settlement_type,
-                'population': settlement_bonus  # This is just the settlement bonus, not total
+                'population': settlement_bonus  # This is the settlement population
+            }
+
+
+def add_economic_data(world_data):
+    """Add economic data to all hexes in the world"""
+    economic_calculator = EconomicCalculator()
+    
+    for coord, hex_data in world_data['hexes'].items():
+        try:
+            # Calculate economics for this hex
+            economics = economic_calculator.calculate_hex_economics(hex_data)
+            
+            # Add economics data to hex
+            hex_data['economics'] = economics
+            
+        except Exception as e:
+            print(f"Error calculating economics for hex {coord}: {e}")
+            # Add default economics data on error
+            hex_data['economics'] = {
+                'rural': {
+                    'population': hex_data.get('population', 100),
+                    'wages': 12,
+                    'taxes': 150
+                }
             }
 
 
@@ -648,6 +672,9 @@ def generate_world(width, height, terrain_types, race_types, params):
     
     # Add settlements (this will increase population in settlement hexes)
     add_settlements(world_data, params)
+    
+    # Add economic data to all hexes
+    add_economic_data(world_data)
     
     return world_data
 
@@ -794,7 +821,3 @@ if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
-
-
-
-
