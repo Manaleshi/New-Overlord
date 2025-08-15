@@ -1,244 +1,307 @@
-// Minimal, bulletproof WorldGenerator implementation
-console.log('Loading minimal WorldGenerator...');
+// World Generator JavaScript Functions
+// Complete implementation for the New Overlord world generator
 
-class WorldGenerator {
-    constructor() {
-        console.log('WorldGenerator constructor');
-        this.hexMap = null;
-        this.currentWorldData = null;
-        this.init();
-    }
+let currentWorldData = null;
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('World Generator initialized');
+    updateDensityDisplay();
     
-    init() {
-        console.log('WorldGenerator init');
+    // Add event listener for density slider
+    const densitySlider = document.getElementById('settlement-density');
+    if (densitySlider) {
+        densitySlider.addEventListener('input', updateDensityDisplay);
+    }
+});
+
+function updateDensityDisplay() {
+    const slider = document.getElementById('settlement-density');
+    const display = document.getElementById('density-value');
+    if (slider && display) {
+        display.textContent = Math.round(slider.value * 100) + '%';
+    }
+}
+
+async function generateWorld() {
+    console.log('Generate World button clicked');
+    
+    try {
+        // Get form values
+        const worldName = document.getElementById('world-name').value || 'Generated World';
+        const width = parseInt(document.getElementById('world-width').value) || 5;
+        const height = parseInt(document.getElementById('world-height').value) || 5;
+        const settlementDensity = parseFloat(document.getElementById('settlement-density').value) || 0.3;
         
-        // Wait a moment for DOM to be ready
-        setTimeout(() => {
-            this.initializeHexMap();
-            this.bindEvents();
-            this.loadOptions();
-        }, 100);
-    }
-    
-    initializeHexMap() {
-        console.log('Creating HexMap...');
-        try {
-            this.hexMap = new HexMap('hex-map', 5, 5);
-            console.log('HexMap created successfully');
-            this.showStatus('World Generator ready - click Generate World');
-        } catch (error) {
-            console.error('HexMap creation failed:', error);
-            this.showStatus('ERROR: Failed to create hex map - ' + error.message);
+        // Get selected terrain types
+        const terrainCheckboxes = document.querySelectorAll('#terrain-types input[type="checkbox"]:checked');
+        const terrainTypes = Array.from(terrainCheckboxes).map(cb => cb.value);
+        
+        if (terrainTypes.length === 0) {
+            alert('Please select at least one terrain type.');
+            return;
         }
-    }
-    
-    bindEvents() {
-        console.log('Binding events...');
         
-        const generateBtn = document.getElementById('generate-btn');
+        console.log(`Generating ${width}x${height} world with terrains:`, terrainTypes);
+        
+        // Prepare request data
+        const requestData = {
+            width: width,
+            height: height,
+            terrain_types: terrainTypes,
+            race_types: ['human'], // Default for now
+            params: {
+                name: worldName,
+                settlement_density: settlementDensity,
+                seed: Math.floor(Math.random() * 100000)
+            }
+        };
+        
+        // Show loading state
+        const generateBtn = document.querySelector('button[onclick="generateWorld()"]');
         if (generateBtn) {
-            generateBtn.onclick = () => this.generateWorld();
-            console.log('Generate button bound');
+            const originalText = generateBtn.textContent;
+            generateBtn.textContent = 'Generating...';
+            generateBtn.disabled = true;
+        }
+        
+        // Make API call
+        const response = await fetch('/api/generate-world', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
+        }
+        
+        const worldData = await response.json();
+        console.log('World generated successfully:', worldData);
+        
+        // Store and display the world
+        currentWorldData = worldData;
+        
+        // Load the world into the hex map
+        if (window.hexMap) {
+            window.hexMap.loadWorld(worldData);
+            console.log('World loaded into hex map');
         } else {
-            console.error('Generate button not found');
+            console.error('HexMap not initialized');
+            alert('Warning: HexMap not available. World data generated but not displayed.');
         }
         
-        const editBtn = document.getElementById('edit-btn');
-        if (editBtn) {
-            editBtn.onclick = () => this.toggleEditMode();
+        // Reset button
+        if (generateBtn) {
+            generateBtn.textContent = 'Generate World';
+            generateBtn.disabled = false;
         }
         
-        const saveBtn = document.getElementById('save-btn');
-        if (saveBtn) {
-            saveBtn.onclick = () => this.saveWorld();
-        }
+        alert('World generated successfully!');
         
-        const loadBtn = document.getElementById('load-btn');
-        if (loadBtn) {
-            loadBtn.onclick = () => this.loadWorld();
-        }
+    } catch (error) {
+        console.error('Error generating world:', error);
+        alert('Error generating world: ' + error.message);
         
-        const exportBtn = document.getElementById('export-btn');
-        if (exportBtn) {
-            exportBtn.onclick = () => this.exportWorld();
-        }
-    }
-    
-    async loadOptions() {
-        console.log('Loading options...');
-        
-        // Load terrain types
-        try {
-            const response = await fetch('/api/terrain-types');
-            const terrainTypes = await response.json();
-            
-            const container = document.getElementById('terrain-checkboxes');
-            if (container) {
-                container.innerHTML = '';
-                terrainTypes.forEach(terrain => {
-                    const label = document.createElement('label');
-                    label.innerHTML = `<input type="checkbox" value="${terrain}" checked> ${terrain} `;
-                    container.appendChild(label);
-                });
-            }
-        } catch (error) {
-            console.error('Error loading terrain types:', error);
-        }
-        
-        // Load race types
-        try {
-            const response = await fetch('/api/race-types');
-            const raceTypes = await response.json();
-            
-            const container = document.getElementById('race-checkboxes');
-            if (container) {
-                container.innerHTML = '';
-                raceTypes.forEach(race => {
-                    const label = document.createElement('label');
-                    label.innerHTML = `<input type="checkbox" value="${race}" ${race === 'human' ? 'checked' : ''}> ${race} `;
-                    container.appendChild(label);
-                });
-            }
-        } catch (error) {
-            console.error('Error loading race types:', error);
-        }
-    }
-    
-    async generateWorld() {
-        console.log('Generate world clicked');
-        
-        if (!this.hexMap) {
-            this.showStatus('ERROR: HexMap not available');
-            return;
-        }
-        
-        this.showStatus('Generating world...');
-        
-        try {
-            // Get simple values
-            const width = parseInt(document.getElementById('world-width')?.value) || 5;
-            const height = parseInt(document.getElementById('world-height')?.value) || 5;
-            const worldName = document.getElementById('world-name')?.value || 'Test World';
-            
-            console.log('World parameters:', { width, height, worldName });
-            
-            // Get selected terrain types
-            const terrainCheckboxes = document.querySelectorAll('#terrain-checkboxes input:checked');
-            const terrainTypes = Array.from(terrainCheckboxes).map(cb => cb.value);
-            
-            if (terrainTypes.length === 0) {
-                terrainTypes.push('plains', 'hills', 'forests'); // fallback
-            }
-            
-            console.log('Terrain types:', terrainTypes);
-            
-            // Resize hex map
-            this.hexMap.resize(width, height);
-            
-            // Generate world
-            const response = await fetch('/api/generate-world', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    width: width,
-                    height: height,
-                    terrain_types: terrainTypes,
-                    race_types: ['human'],
-                    params: {
-                        name: worldName,
-                        settlement_density: 0.3,
-                        seed: Math.floor(Math.random() * 10000)
-                    }
-                })
-            });
-            
-            console.log('API response status:', response.status);
-            
-            if (response.ok) {
-                const worldData = await response.json();
-                console.log('World data received, hexes count:', Object.keys(worldData.hexes || {}).length);
-                
-                this.currentWorldData = worldData;
-                this.hexMap.loadWorldData(worldData);
-                
-                this.showStatus('World generated successfully! Click hexes to explore.');
-            } else {
-                const errorText = await response.text();
-                console.error('API error:', errorText);
-                this.showStatus('ERROR: Failed to generate world - ' + errorText);
-            }
-            
-        } catch (error) {
-            console.error('Generation error:', error);
-            this.showStatus('ERROR: ' + error.message);
-        }
-    }
-    
-    toggleEditMode() {
-        console.log('Toggle edit mode');
-        this.showStatus('Edit mode toggled');
-    }
-    
-    async saveWorld() {
-        console.log('Save world');
-        if (!this.currentWorldData) {
-            this.showStatus('No world to save');
-            return;
-        }
-        this.showStatus('World save functionality coming soon');
-    }
-    
-    async loadWorld() {
-        console.log('Load world');
-        this.showStatus('World load functionality coming soon');
-    }
-    
-    exportWorld() {
-        console.log('Export world');
-        if (!this.currentWorldData) {
-            this.showStatus('No world to export');
-            return;
-        }
-        
-        const dataStr = JSON.stringify(this.currentWorldData, null, 2);
-        const dataBlob = new Blob([dataStr], {type: 'application/json'});
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(dataBlob);
-        link.download = 'world_export.json';
-        link.click();
-        
-        this.showStatus('World exported successfully');
-    }
-    
-    showStatus(message) {
-        console.log('Status:', message);
-        const statusElement = document.getElementById('status-message');
-        if (statusElement) {
-            if (message.startsWith('ERROR:')) {
-                statusElement.innerHTML = `<div style="color: red; font-weight: bold; padding: 10px; border: 2px solid red; margin: 10px 0;">${message}</div>`;
-            } else {
-                statusElement.innerHTML = `<div style="color: green; font-weight: bold; padding: 10px; margin: 10px 0;">${message}</div>`;
-            }
+        // Reset button on error
+        const generateBtn = document.querySelector('button[onclick="generateWorld()"]');
+        if (generateBtn) {
+            generateBtn.textContent = 'Generate World';
+            generateBtn.disabled = false;
         }
     }
 }
 
-// Initialize when DOM is ready
-console.log('Setting up initialization...');
-
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded - creating WorldGenerator');
-    try {
-        window.worldGenerator = new WorldGenerator();
-        console.log('WorldGenerator created successfully');
-    } catch (error) {
-        console.error('Failed to create WorldGenerator:', error);
-        
-        const statusElement = document.getElementById('status-message');
-        if (statusElement) {
-            statusElement.innerHTML = `<div style="color: red; font-weight: bold;">FATAL ERROR: ${error.message}</div>`;
-        }
+async function saveWorld() {
+    if (!currentWorldData) {
+        alert('No world data to save. Generate a world first.');
+        return;
     }
-});
+    
+    try {
+        const filename = prompt('Enter filename (without .json extension):', 
+                               currentWorldData.metadata.name.replace(/\s+/g, '_'));
+        
+        if (!filename) return;
+        
+        const response = await fetch('/api/save-world', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                world_data: currentWorldData,
+                filename: filename
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
+        }
+        
+        const result = await response.json();
+        alert(`World saved as: ${result.filename}`);
+        
+    } catch (error) {
+        console.error('Error saving world:', error);
+        alert('Error saving world: ' + error.message);
+    }
+}
 
-console.log('WorldGenerator script loaded');
+async function loadWorld() {
+    try {
+        // Get list of available worlds
+        const response = await fetch('/api/list-worlds');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const worldFiles = await response.json();
+        
+        if (worldFiles.length === 0) {
+            alert('No saved worlds found.');
+            return;
+        }
+        
+        // Create simple selection dialog
+        let fileList = 'Available worlds:\n';
+        worldFiles.forEach((file, index) => {
+            fileList += `${index + 1}. ${file}\n`;
+        });
+        
+        const selection = prompt(fileList + '\nEnter the number of the world to load:');
+        if (!selection) return;
+        
+        const index = parseInt(selection) - 1;
+        if (index < 0 || index >= worldFiles.length) {
+            alert('Invalid selection.');
+            return;
+        }
+        
+        const filename = worldFiles[index];
+        
+        // Load the selected world
+        const loadResponse = await fetch(`/api/load-world/${filename}`);
+        if (!loadResponse.ok) {
+            const errorData = await loadResponse.json().catch(() => ({}));
+            throw new Error(`HTTP error! status: ${loadResponse.status}, message: ${errorData.error || 'Unknown error'}`);
+        }
+        
+        const worldData = await loadResponse.json();
+        currentWorldData = worldData;
+        
+        // Load into hex map
+        if (window.hexMap) {
+            window.hexMap.loadWorld(worldData);
+        } else {
+            console.error('HexMap not available');
+        }
+        
+        // Update form fields
+        const nameField = document.getElementById('world-name');
+        const widthField = document.getElementById('world-width');
+        const heightField = document.getElementById('world-height');
+        
+        if (nameField) nameField.value = worldData.metadata.name;
+        if (widthField) widthField.value = worldData.metadata.size.width;
+        if (heightField) heightField.value = worldData.metadata.size.height;
+        
+        alert(`World "${worldData.metadata.name}" loaded successfully!`);
+        
+    } catch (error) {
+        console.error('Error loading world:', error);
+        alert('Error loading world: ' + error.message);
+    }
+}
+
+function exportWorld() {
+    if (!currentWorldData) {
+        alert('No world data to export. Generate a world first.');
+        return;
+    }
+    
+    try {
+        // Create downloadable JSON file
+        const dataStr = JSON.stringify(currentWorldData, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        
+        // Create download link
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${currentWorldData.metadata.name.replace(/\s+/g, '_')}.json`;
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up
+        URL.revokeObjectURL(url);
+        
+        console.log('World exported successfully');
+        
+    } catch (error) {
+        console.error('Error exporting world:', error);
+        alert('Error exporting world: ' + error.message);
+    }
+}
+
+// Terrain editing functions
+function setEditTerrain(terrainType) {
+    console.log(`Setting edit terrain to: ${terrainType}`);
+    
+    // Remove active class from all terrain buttons
+    document.querySelectorAll('.terrain-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Add active class to clicked button (if event is available)
+    if (typeof event !== 'undefined' && event.target) {
+        event.target.classList.add('active');
+    } else {
+        // Fallback: find the button by text content
+        document.querySelectorAll('.terrain-btn').forEach(btn => {
+            if (btn.textContent.toLowerCase().includes(terrainType.toLowerCase())) {
+                btn.classList.add('active');
+            }
+        });
+    }
+    
+    // Set edit mode in hex map
+    if (window.hexMap) {
+        window.hexMap.setTerrainEditMode(terrainType);
+    } else {
+        console.error('HexMap not available for terrain editing');
+        alert('HexMap not available for terrain editing. Make sure you have generated a world first.');
+    }
+}
+
+function exitEditMode() {
+    console.log('Exiting edit mode');
+    
+    // Remove active class from all terrain buttons
+    document.querySelectorAll('.terrain-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Exit edit mode in hex map
+    if (window.hexMap) {
+        window.hexMap.exitEditMode();
+    } else {
+        console.error('HexMap not available');
+    }
+}
+
+// Debug function to check if everything is loaded
+function checkStatus() {
+    console.log('=== World Generator Status ===');
+    console.log('Current world data:', currentWorldData ? 'Available' : 'None');
+    console.log('HexMap available:', window.hexMap ? 'Yes' : 'No');
+    console.log('Generate button:', document.querySelector('button[onclick="generateWorld()"]') ? 'Found' : 'Not found');
+    console.log('Terrain checkboxes:', document.querySelectorAll('#terrain-types input[type="checkbox"]').length);
+}
