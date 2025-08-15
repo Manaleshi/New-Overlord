@@ -188,23 +188,28 @@ class HexMap {
     const locationName = hexData.geographic_name || `${hexData.terrain} region`;
     const locationId = hexData.location_id || 'Unknown';
     
-    // Build population info
-    let populationInfo = '';
-    if (hexData.population) {
-        populationInfo = `
-            <div class="population-info">
-                <strong>Population:</strong> ${hexData.population.toLocaleString()}
-            </div>
-        `;
+    // Calculate rural population (total - settlement bonus)
+    let ruralPopulation = hexData.population || 0;
+    let settlementPopulation = 0;
+    
+    if (hexData.population_center && hexData.population_center.population) {
+        settlementPopulation = hexData.population_center.population;
+        ruralPopulation = hexData.population - settlementPopulation;
     }
+    
+    // Build population info
+    let populationInfo = `
+        <div class="population-info">
+            <strong>Population:</strong> ${ruralPopulation.toLocaleString()}
+        </div>
+    `;
     
     // Build settlement info
     let settlementInfo = '';
     if (hexData.population_center) {
         settlementInfo = `
             <div class="settlement-info">
-                <strong>Settlement:</strong> ${hexData.population_center.name} (${hexData.population_center.type})
-                <br><strong>Settlement Population:</strong> ${hexData.population_center.population ? hexData.population_center.population.toLocaleString() : 'Unknown'}
+                <strong>Settlement:</strong> ${hexData.population_center.name} (${hexData.population_center.type}) - Population: ${settlementPopulation.toLocaleString()}
             </div>
         `;
     }
