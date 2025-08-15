@@ -460,10 +460,7 @@ def add_settlements(world_data, params):
             # Add spillover effect to rural population (5% of settlement)
             spillover = int(settlement_bonus * 0.03)  # 5% spillover
             hex_data['population'] += settlement_bonus + spillover
-
-            # Add settlement bonus to existing base population
-            hex_data['population'] += settlement_bonus
-            
+                       
             hex_data['population_center'] = {
                 'name': settlement_name,
                 'type': settlement_type,
@@ -654,5 +651,6 @@ if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
