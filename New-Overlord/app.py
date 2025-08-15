@@ -397,12 +397,12 @@ def generate_population_for_hex(x, y, terrain, params):
     
     # Base population ranges by terrain type
     population_ranges = {
-        'plains': (150, 400),   # farming communities
-        'hills': (100, 300),    # mining/herding communities
-        'forests': (75, 250),   # woodcutters, hunters  
-        'swamps': (25, 100),    # hardy survivors, fishers
-        'deserts': (10, 75),    # nomads, oasis dwellers
-        'mountains': (25, 150)  # miners, hermits
+        'plains': (150, 300),   # farming communities
+        'hills': (100, 250),    # mining/herding communities
+        'forests': (75, 200),   # woodcutters, hunters  
+        'swamps': (25, 75),    # hardy survivors, fishers
+        'deserts': (10, 65),    # nomads, oasis dwellers
+        'mountains': (25, 100)  # miners, hermits
     }
     
     min_pop, max_pop = population_ranges.get(terrain, (50, 200))
@@ -449,9 +449,9 @@ def add_settlements(world_data, params):
             
             # Settlement population bonuses added to base population
             settlement_bonuses = {
-                'village': random.randint(200, 600),
-                'town': random.randint(800, 2000),
-                'city': random.randint(3000, 8000)
+                'village': random.randint(200, 400),
+                'town': random.randint(400, 1500),
+                'city': random.randint(1500, 5500)
             }
             
             settlement_name = name_generator.generate_settlement_name(hex_data['terrain'], settlement_type)
@@ -650,3 +650,4 @@ if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
