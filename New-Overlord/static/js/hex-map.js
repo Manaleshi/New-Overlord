@@ -180,74 +180,85 @@ class HexMap {
         }
     }
     
-    updateHexInfoPanel(hexData, directions) {
-        const infoPanel = document.getElementById('hex-info');
-        if (!infoPanel) return;
-        
-        // Get geographic name or generate one
-        const locationName = hexData.geographic_name || `${hexData.terrain} region`;
-        const locationId = hexData.location_id || 'Unknown';
-        
-        // Build settlement info
-        let settlementInfo = '';
-        if (hexData.population_center) {
-            settlementInfo = `
-                <div class="settlement-info">
-                    <strong>Settlement:</strong> ${hexData.population_center.name} (${hexData.population_center.type})
-                    <br><strong>Population:</strong> ${hexData.population_center.population || 'Unknown'}
-                </div>
-            `;
-        }
-        
-        // Build directions info with proper hex directions
-        let directionsHtml = '<div class="directions"><h4>Directions:</h4>';
-        
-        if (Object.keys(directions).length > 0) {
-            for (const direction of this.directionOrder) {
-                if (directions[direction]) {
-                    const dirData = directions[direction];
-                    const directionName = this.directionNames[direction];
-                    
-                    if (dirData.movement.walking === 'impassable') {
-                        directionsHtml += `
-                            <div class="direction">
-                                <strong>${directionName}</strong>, to ${dirData.destination}, ${dirData.terrain} 
-                                <span class="impassable">Impassable</span>
-                                ${dirData.movement.note ? ` (${dirData.movement.note})` : ''}
-                            </div>
-                        `;
-                    } else {
-                        // Show specific calculated times
-                        const walkTime = dirData.movement.walking;
-                        const rideTime = dirData.movement.riding;
-                        const flyTime = dirData.movement.flying;
-                        
-                        directionsHtml += `
-                            <div class="direction">
-                                <strong>${directionName}</strong>, to ${dirData.destination} [${dirData.location_id || 'Unknown'}], ${dirData.terrain}
-                                <br>&nbsp;&nbsp;&nbsp;&nbsp;Walking: ${walkTime} days, Riding: ${rideTime} days, Flying: ${flyTime} days
-                            </div>
-                        `;
-                    }
-                }
-            }
-        } else {
-            directionsHtml += '<div class="direction">Movement data not available</div>';
-        }
-        directionsHtml += '</div>';
-        
-        // Update the info panel
-        infoPanel.innerHTML = `
-            <h3>${locationName} [${locationId}]</h3>
-            <div class="hex-details">
-                <strong>Terrain:</strong> ${hexData.terrain.charAt(0).toUpperCase() + hexData.terrain.slice(1)}
-                <br><strong>Coordinates:</strong> (${hexData.coordinates.x}, ${hexData.coordinates.y})
-                <br><strong>Resources:</strong> ${hexData.resources ? hexData.resources.join(', ') : 'None'}
+   updateHexInfoPanel(hexData, directions) {
+    const infoPanel = document.getElementById('hex-info');
+    if (!infoPanel) return;
+    
+    // Get geographic name or generate one
+    const locationName = hexData.geographic_name || `${hexData.terrain} region`;
+    const locationId = hexData.location_id || 'Unknown';
+    
+    // Build population info
+    let populationInfo = '';
+    if (hexData.population) {
+        populationInfo = `
+            <div class="population-info">
+                <strong>Population:</strong> ${hexData.population.toLocaleString()}
             </div>
-            ${settlementInfo}
-            ${directionsHtml}
         `;
     }
+    
+    // Build settlement info
+    let settlementInfo = '';
+    if (hexData.population_center) {
+        settlementInfo = `
+            <div class="settlement-info">
+                <strong>Settlement:</strong> ${hexData.population_center.name} (${hexData.population_center.type})
+                <br><strong>Settlement Population:</strong> ${hexData.population_center.population ? hexData.population_center.population.toLocaleString() : 'Unknown'}
+            </div>
+        `;
+    }
+    
+    // Build directions info with proper hex directions
+    let directionsHtml = '<div class="directions"><h4>Directions:</h4>';
+    
+    if (Object.keys(directions).length > 0) {
+        for (const direction of this.directionOrder) {
+            if (directions[direction]) {
+                const dirData = directions[direction];
+                const directionName = this.directionNames[direction];
+                
+                if (dirData.movement.walking === 'impassable') {
+                    directionsHtml += `
+                        <div class="direction">
+                            <strong>${directionName}</strong>, to ${dirData.destination}, ${dirData.terrain} 
+                            <span class="impassable">Impassable</span>
+                            ${dirData.movement.note ? ` (${dirData.movement.note})` : ''}
+                        </div>
+                    `;
+                } else {
+                    // Show specific calculated times
+                    const walkTime = dirData.movement.walking;
+                    const rideTime = dirData.movement.riding;
+                    const flyTime = dirData.movement.flying;
+                    
+                    directionsHtml += `
+                        <div class="direction">
+                            <strong>${directionName}</strong>, to ${dirData.destination} [${dirData.location_id || 'Unknown'}], ${dirData.terrain}
+                            <br>&nbsp;&nbsp;&nbsp;&nbsp;Walking: ${walkTime} days, Riding: ${rideTime} days, Flying: ${flyTime} days
+                        </div>
+                    `;
+                }
+            }
+        }
+    } else {
+        directionsHtml += '<div class="direction">Movement data not available</div>';
+    }
+    directionsHtml += '</div>';
+    
+    // Update the info panel
+    infoPanel.innerHTML = `
+        <h3>${locationName} [${locationId}]</h3>
+        <div class="hex-details">
+            <strong>Terrain:</strong> ${hexData.terrain.charAt(0).toUpperCase() + hexData.terrain.slice(1)}
+            <br><strong>Coordinates:</strong> (${hexData.coordinates.x}, ${hexData.coordinates.y})
+            <br><strong>Resources:</strong> ${hexData.resources ? hexData.resources.join(', ') : 'None'}
+        </div>
+        ${populationInfo}
+        ${settlementInfo}
+        ${directionsHtml}
+    `;
+}
     
     // Terrain editing methods
     setTerrainEditMode(terrainType) {
