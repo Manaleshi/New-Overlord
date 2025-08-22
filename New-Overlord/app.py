@@ -534,60 +534,60 @@ def get_hex_movement(x, y):
         calculator = MovementCalculator()
         
         # Direction mapping for hexagonal layout
-       direction_map = {}
-all_possible_directions = ['NW', 'N', 'NE', 'SE', 'S', 'SW']
+        direction_map = {}
+        all_possible_directions = ['NW', 'N', 'NE', 'SE', 'S', 'SW']
 
-# Calculate all 6 potential neighbor positions
-potential_neighbors = []
-if x % 2 == 0:  # Even column
-    deltas = [(-1, -1), (-1, 0), (0, -1), (0, 1), (1, -1), (1, 0)]
-else:  # Odd column
-    deltas = [(-1, 0), (-1, 1), (0, -1), (0, 1), (1, 0), (1, 1)]
+        # Calculate all 6 potential neighbor positions
+        potential_neighbors = []
+        if x % 2 == 0:  # Even column
+            deltas = [(-1, -1), (-1, 0), (0, -1), (0, 1), (1, -1), (1, 0)]
+        else:  # Odd column
+            deltas = [(-1, 0), (-1, 1), (0, -1), (0, 1), (1, 0), (1, 1)]
 
-for i, (dx, dy) in enumerate(deltas):
-    nx, ny = x + dx, y + dy
-    direction = all_possible_directions[i]
+        for i, (dx, dy) in enumerate(deltas):
+            nx, ny = x + dx, y + dy
+            direction = all_possible_directions[i]
     
-    # Handle east-west wrapping
-    if world_data['metadata']['wrap']['east_west']:
-        nx = nx % world_data['metadata']['size']['width']
+            # Handle east-west wrapping
+            if world_data['metadata']['wrap']['east_west']:
+                nx = nx % world_data['metadata']['size']['width']
     
-    # Check if neighbor exists
-    if (0 <= nx < world_data['metadata']['size']['width'] and 
-        0 <= ny < world_data['metadata']['size']['height']):
-        neighbor_hex = world_data['hexes'].get(f'{nx},{ny}')
+            # Check if neighbor exists
+            if (0 <= nx < world_data['metadata']['size']['width'] and 
+                0 <= ny < world_data['metadata']['size']['height']):
+                neighbor_hex = world_data['hexes'].get(f'{nx},{ny}')
         
-        if neighbor_hex:
-            neighbor_terrain = neighbor_hex['terrain']
+                if neighbor_hex:
+                    neighbor_terrain = neighbor_hex['terrain']
             
-            # Calculate movement times
-            walking_time = calculator.calculate_movement_time(current_terrain, neighbor_terrain, 'walking')
-            riding_time = calculator.calculate_movement_time(current_terrain, neighbor_terrain, 'riding')
-            flying_time = calculator.calculate_movement_time(current_terrain, neighbor_terrain, 'flying')
+                    # Calculate movement times
+                    walking_time = calculator.calculate_movement_time(current_terrain, neighbor_terrain, 'walking')
+                    riding_time = calculator.calculate_movement_time(current_terrain, neighbor_terrain, 'riding')
+                    flying_time = calculator.calculate_movement_time(current_terrain, neighbor_terrain, 'flying')
             
-            direction_map[direction] = {
-                'destination': neighbor_hex.get('geographic_name', f'{neighbor_terrain} region'),
-                'location_id': neighbor_hex.get('location_id', 'Unknown'),
-                'terrain': neighbor_terrain,
-                'movement': {
-                    'walking': walking_time,
-                    'riding': riding_time,
-                    'flying': flying_time
+                    direction_map[direction] = {
+                        'destination': neighbor_hex.get('geographic_name', f'{neighbor_terrain} region'),
+                        'location_id': neighbor_hex.get('location_id', 'Unknown'),
+                        'terrain': neighbor_terrain,
+                        'movement': {
+                            'walking': walking_time,
+                            'riding': riding_time,
+                            'flying': flying_time
+                        }
+                    }
+            else:
+                # No neighbor exists - mark as impassable
+                direction_map[direction] = {
+                    'destination': 'World Edge',
+                    'location_id': 'N/A',
+                    'terrain': 'boundary',
+                    'movement': {
+                        'walking': 'impassable',
+                        'riding': 'impassable', 
+                        'flying': 'impassable',
+                        'note': 'World boundary'
+                    }
                 }
-            }
-    else:
-        # No neighbor exists - mark as impassable
-        direction_map[direction] = {
-            'destination': 'World Edge',
-            'location_id': 'N/A',
-            'terrain': 'boundary',
-            'movement': {
-                'walking': 'impassable',
-                'riding': 'impassable', 
-                'flying': 'impassable',
-                'note': 'World boundary'
-            }
-        }
             
             direction_names = ['NW', 'N', 'NE', 'SE', 'S', 'SW']
             
@@ -708,6 +708,7 @@ def get_terrain_resources(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
