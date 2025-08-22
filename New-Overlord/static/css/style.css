@@ -513,3 +513,50 @@ footer {
     position: relative;
     overflow: auto;
 }
+
+/* ===========================================
+   ECONOMICS DISPLAY STYLES - ADD THESE
+   =========================================== */
+
+/* Economic information styling */
+.economic-info {
+    background-color: #f0f8ff;
+    border: 1px solid #b0d4f1;
+    border-radius: 4px;
+    padding: 8px;
+    margin: 8px 0;
+}
+
+.settlement-economic-info {
+    background-color: #f5f5dc;
+    border: 1px solid #d4b896;
+    border-radius: 4px;
+    padding: 8px;
+    margin: 8px 0;
+}
+
+.settlement-info {
+    background-color: #e6ffe6;
+    border: 1px solid #90ee90;
+    border-radius: 4px;
+    padding: 6px;
+    margin: 6px 0;
+    font-size: 0.9em;
+}
+
+/* Enhanced hex info panel for economics */
+#hex-info h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 4px;
+}
+
+.hex-details {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 8px;
+    margin: 8px 0;
+}
