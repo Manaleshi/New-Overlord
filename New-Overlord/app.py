@@ -540,9 +540,9 @@ def get_hex_movement(x, y):
         # Calculate all 6 potential neighbor positions
         potential_neighbors = []
         if x % 2 == 0:  # Even column
-            deltas = [(-1, -1), (-1, 0), (0, -1), (0, 1), (1, -1), (1, 0)]
+            deltas = [(-1, -1), (0, -1), (1, -1), (1, 0), (0, 1), (-1, 0)]
         else:  # Odd column
-            deltas = [(-1, 0), (-1, 1), (0, -1), (0, 1), (1, 0), (1, 1)]
+            deltas = [(-1, 0), (0, -1), (1, 0), (1, 1), (0, 1), (-1, 1)]
 
         for i, (dx, dy) in enumerate(deltas):
             nx, ny = x + dx, y + dy
@@ -684,6 +684,7 @@ def get_terrain_resources(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
