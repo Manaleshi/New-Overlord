@@ -30,6 +30,11 @@ async function generateWorld() {
         // Get form values
         const worldName = document.getElementById('world-name').value || 'Generated World';
         const width = parseInt(document.getElementById('world-width').value) || 5;
+        // Ensure width is even for proper hex layout
+        if (width % 2 !== 0) {
+            width += 1;
+            document.getElementById('world-width').value = width; // Update the input
+        }
         const height = parseInt(document.getElementById('world-height').value) || 5;
         const settlementDensity = parseFloat(document.getElementById('settlement-density').value) || 0.3;
         
