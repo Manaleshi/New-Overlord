@@ -185,28 +185,49 @@ class HexMap {
         const locationName = hexData.geographic_name || `${hexData.terrain} region`;
         const locationId = hexData.location_id || 'Unknown';
         
-        // Calculate rural population (total - settlement bonus)
-        let ruralPopulation = hexData.population || 0;
-        let settlementPopulation = 0;
+        // Get economics data
+        const economics = hexData.economics;
         
-        if (hexData.population_center && hexData.population_center.population) {
-            settlementPopulation = hexData.population_center.population;
-            ruralPopulation = hexData.population - settlementPopulation;
+        // Build economic info display
+        let economicInfo = '';
+        if (economics) {
+            const rural = economics.rural;
+            const settlement = economics.settlement;
+            
+            // Rural economics (always present)
+            economicInfo = `
+                <div class="economic-info">
+                    <strong>Population:</strong> ${rural.population.toLocaleString()}
+                    <br><strong>Wages:</strong> ${rural.wages}, <strong>taxes:</strong> ${rural.taxes}
+                </div>
+            `;
+            
+            // Settlement economics (if present)
+            if (settlement && settlement.population > 0) {
+                economicInfo += `
+                    <div class="settlement-economic-info">
+                        <strong>Settlement:</strong> ${settlement.name} (${settlement.type}) - Population: ${settlement.population.toLocaleString()}
+                        <br><strong>Settlement Wages:</strong> ${settlement.wages}, <strong>taxes:</strong> ${settlement.taxes}
+                    </div>
+                `;
+            }
+        } else {
+            // Fallback if no economics data
+            const totalPop = hexData.population || 0;
+            economicInfo = `
+                <div class="economic-info">
+                    <strong>Population:</strong> ${totalPop.toLocaleString()}
+                    <br><em>Economic data not available</em>
+                </div>
+            `;
         }
         
-        // Build population info
-        let populationInfo = `
-            <div class="population-info">
-                <strong>Population:</strong> ${ruralPopulation.toLocaleString()}
-            </div>
-        `;
-        
-        // Build settlement info
+        // Build settlement basic info (separate from economics)
         let settlementInfo = '';
         if (hexData.population_center) {
             settlementInfo = `
                 <div class="settlement-info">
-                    <strong>Settlement:</strong> ${hexData.population_center.name} (${hexData.population_center.type}) - Population: ${settlementPopulation.toLocaleString()}
+                    <strong>Settlement:</strong> ${hexData.population_center.name} (${hexData.population_center.type})
                 </div>
             `;
         }
@@ -256,8 +277,7 @@ class HexMap {
                 <br><strong>Coordinates:</strong> (${hexData.coordinates.x}, ${hexData.coordinates.y})
                 <br><strong>Resources:</strong> ${hexData.resources ? hexData.resources.join(', ') : 'None'}
             </div>
-            ${populationInfo}
-            ${settlementInfo}
+            ${economicInfo}
             ${directionsHtml}
         `;
     }
@@ -293,6 +313,9 @@ class HexMap {
             // Update resources for new terrain
             this.worldData.hexes[`${x},${y}`].resources = this.getTerrainResources(this.editTerrain);
             
+            // Recalculate economics for new terrain
+            this.recalculateHexEconomics(x, y);
+            
             // Update visual
             hex.className = `hex terrain-${this.editTerrain}`;
             if (hex.classList.contains('selected')) {
@@ -312,6 +335,68 @@ class HexMap {
             // Update the world data in the backend session
             this.updateWorldDataInBackend();
         }
+    }
+    
+    recalculateHexEconomics(x, y) {
+        const hexData = this.worldData.hexes[`${x},${y}`];
+        if (!hexData) return;
+        
+        // Simple client-side economic recalculation for terrain changes
+        const population = hexData.population || 0;
+        const settlement = hexData.population_center;
+        const terrain = hexData.terrain;
+        
+        // Simplified economics calculation (matches backend logic)
+        let rural_population = population;
+        let settlement_population = 0;
+        
+        if (settlement) {
+            settlement_population = settlement.population;
+            rural_population = Math.max(0, population - settlement_population);
+        }
+        
+        // Base wage calculation with terrain modifier
+        const base_wage = 10;
+        const terrain_modifiers = {
+            'plains': 1.0,
+            'hills': 1.1,
+            'mountains': 1.2,
+            'forests': 1.1,
+            'swamps': 1.3,
+            'deserts': 1.4,
+            'water': 1.0
+        };
+        
+        let wage_modifier = 1.0;
+        if (population < 100) wage_modifier = 1.3;
+        else if (population < 500) wage_modifier = 1.1;
+        else if (population < 2000) wage_modifier = 1.0;
+        else if (population < 5000) wage_modifier = 0.9;
+        else wage_modifier = 0.8;
+        
+        const terrain_mod = terrain_modifiers[terrain] || 1.0;
+        const rural_wages = Math.floor(base_wage * wage_modifier * terrain_mod);
+        const rural_taxes = Math.floor(rural_population * rural_wages * 0.15);
+        
+        // Update economics data
+        hexData.economics = {
+            rural: {
+                population: rural_population,
+                wages: rural_wages,
+                taxes: rural_taxes
+            },
+            settlement: settlement ? {
+                population: settlement_population,
+                wages: settlement.type === 'city' ? rural_wages * 2 : 
+                       settlement.type === 'town' ? Math.floor(rural_wages * 1.5) : 
+                       Math.floor(rural_wages * 1.2),
+                taxes: settlement.type === 'city' ? Math.floor(settlement_population * rural_wages * 2 * 0.28) :
+                       settlement.type === 'town' ? Math.floor(settlement_population * rural_wages * 1.5 * 0.22) :
+                       Math.floor(settlement_population * rural_wages * 1.2 * 0.18),
+                type: settlement.type,
+                name: settlement.name
+            } : null
+        };
     }
     
     updateHexVisual(hexElement, x, y) {
