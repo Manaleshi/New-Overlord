@@ -410,6 +410,9 @@ def generate_world():
     try:
         data = request.get_json()
         width = data.get('width', 5)
+        # Ensure width is even for proper hex layout
+        if width % 2 != 0:
+            width += 1  # Round up to next even number
         height = data.get('height', 5)
         terrain_types = data.get('terrain_types', ['plains', 'hills', 'forests'])
         params = data.get('params', {})
@@ -684,6 +687,7 @@ def get_terrain_resources(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
