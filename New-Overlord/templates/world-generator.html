@@ -60,6 +60,10 @@
                                 <input type="checkbox" id="terrain-deserts" value="deserts">
                                 <label for="terrain-deserts">Deserts</label>
                             </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="terrain-water" value="water">
+                                <label for="terrain-water">water</label>
+                            </div>
                         </div>
                     </div>
                     
@@ -86,6 +90,7 @@
                             <button class="terrain-btn" onclick="setEditTerrain('forests')">Forests</button>
                             <button class="terrain-btn" onclick="setEditTerrain('swamps')">Swamps</button>
                             <button class="terrain-btn" onclick="setEditTerrain('deserts')">Deserts</button>
+                            <button class="terrain-btn" onclick="setEditTerrain('water')">water</button>
                             <button class="terrain-btn" onclick="exitEditMode()">Stop Editing</button>
                         </div>
                         <div id="edit-mode-indicator">Edit Mode: None</div>
@@ -106,3 +111,4 @@
     <script src="{{ url_for('static', filename='js/world-generator.js') }}"></script>
 </body>
 </html>
+
