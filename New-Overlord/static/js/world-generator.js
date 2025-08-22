@@ -29,7 +29,7 @@ async function generateWorld() {
     try {
         // Get form values
         const worldName = document.getElementById('world-name').value || 'Generated World';
-        const width = parseInt(document.getElementById('world-width').value) || 5;
+        let width = parseInt(document.getElementById('world-width').value) || 5;
         // Ensure width is even for proper hex layout
         if (width % 2 !== 0) {
             width += 1;
