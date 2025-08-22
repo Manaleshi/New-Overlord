@@ -393,7 +393,7 @@ def generate_population(terrain, settlement_data):
         'forests': random.randint(80, 500),
         'swamps': random.randint(10, 150),
         'deserts': random.randint(5, 100),
-        'water': random.randint(20, 200)
+        'water': 0
     }
     
     rural_pop = base_population.get(terrain, 100)
@@ -465,7 +465,9 @@ def generate_world():
             # Generate settlement (probabilistic)
             if settlements_placed < target_settlements:
                 settlement_chance = settlement_density * 1.5  # Boost chance for remaining slots
-                
+                # Skip water hexes - no settlements on water
+                if hex_data['terrain'] == 'water':
+                    continue
                 if random.random() < settlement_chance:
                     # Determine settlement type
                     settlement_type = random.choices(
@@ -687,6 +689,7 @@ def get_terrain_resources(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
