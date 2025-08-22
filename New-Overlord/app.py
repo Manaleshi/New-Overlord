@@ -592,18 +592,18 @@ def get_hex_movement(x, y):
             direction_names = ['NW', 'N', 'NE', 'SE', 'S', 'SW']
             
             for i, (nx, ny) in enumerate(neighbors):
-                if i < len(direction_indices):
-                    direction = direction_names[direction_indices[i]]
+                if i < len(direction_names):
+                    direction = direction_names[i]
                     neighbor_hex = world_data['hexes'].get(f'{nx},{ny}')
-                    
+        
                     if neighbor_hex:
                         neighbor_terrain = neighbor_hex['terrain']
-                        
+            
                         # Calculate movement times
                         walking_time = calculator.calculate_movement_time(current_terrain, neighbor_terrain, 'walking')
                         riding_time = calculator.calculate_movement_time(current_terrain, neighbor_terrain, 'riding')
                         flying_time = calculator.calculate_movement_time(current_terrain, neighbor_terrain, 'flying')
-                        
+            
                         direction_map[direction] = {
                             'destination': neighbor_hex.get('geographic_name', f'{neighbor_terrain} region'),
                             'location_id': neighbor_hex.get('location_id', 'Unknown'),
@@ -708,6 +708,7 @@ def get_terrain_resources(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
