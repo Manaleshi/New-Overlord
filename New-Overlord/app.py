@@ -185,25 +185,16 @@ class TerrainClusterer:
 
 class MovementCalculator:
     def __init__(self):
-        self.movement_data = self.load_movement_data()
-    
-    def load_movement_data(self):
-        try:
-            with open('config/movement-system.json', 'r') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            return self.get_default_movement_data()
-    
-    def get_default_movement_data(self):
-        return {
+        # Use built-in default data instead of trying to load file
+        self.movement_data = {
             "base_movement": {
                 "plains": {"exit": 1, "enter": 1},
                 "hills": {"exit": 2, "enter": 2},
-                "mountains": {"exit": 3, "enter": 4, "special": "difficult"},
+                "mountains": {"exit": 3, "enter": 4},
                 "forests": {"exit": 2, "enter": 3},
-                "swamps": {"exit": 3, "enter": 4, "special": "treacherous"},
-                "deserts": {"exit": 2, "enter": 3, "special": "harsh"},
-                "water": {"exit": 0, "enter": 0, "special": "impassable"}
+                "swamps": {"exit": 3, "enter": 4},
+                "deserts": {"exit": 2, "enter": 3},
+                "water": {"exit": 0, "enter": 0}
             },
             "movement_modes": {
                 "walking": {"multiplier": 1.0},
@@ -236,7 +227,7 @@ class MovementCalculator:
             return max(1, int(total_time * mode_data['riding']['multiplier']))
         else:  # walking
             return total_time
-
+            
 class EconomicCalculator:
     def __init__(self):
         self.base_wage = 10
@@ -670,4 +661,5 @@ def get_terrain_resources(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
