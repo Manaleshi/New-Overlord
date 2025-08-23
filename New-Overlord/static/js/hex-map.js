@@ -275,7 +275,7 @@ class HexMap {
             <div class="hex-details">
                 <strong>Terrain:</strong> ${hexData.terrain.charAt(0).toUpperCase() + hexData.terrain.slice(1)}
                 <br><strong>Coordinates:</strong> (${hexData.coordinates.x}, ${hexData.coordinates.y})
-                <br><strong>Resources:</strong> ${hexData.resources ? hexData.resources.join(', ') : 'None'}
+                <br><strong>Resources:</strong> ${this.formatResourcesWithQuantities(hexData)}
             </div>
             ${economicInfo}
             ${directionsHtml}
@@ -496,6 +496,19 @@ class HexMap {
             infoPanel.innerHTML = '<p>Click on a hex to view details</p>';
         }
     }
+}
+
+formatResourcesWithQuantities(hexData) {
+    if (!hexData.resources || hexData.resources.length === 0) {
+        return 'None';
+    }
+    
+    const quantities = hexData.resource_quantities || {};
+    
+    return hexData.resources.map(resource => {
+        const qty = quantities[resource];
+        return qty ? `${qty} ${resource}` : resource;
+    }).join(', ');
 }
 
 // Initialize hex map when page loads
