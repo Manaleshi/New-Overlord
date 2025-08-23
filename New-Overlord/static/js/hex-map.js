@@ -484,7 +484,7 @@ class HexMap {
         return this.worldData;
     }
     
-    clearSelection() {
+clearSelection() {
         const prevSelected = this.container.querySelector('.hex.selected');
         if (prevSelected) {
             prevSelected.classList.remove('selected');
@@ -496,19 +496,19 @@ class HexMap {
             infoPanel.innerHTML = '<p>Click on a hex to view details</p>';
         }
     }
-}
 
-formatResourcesWithQuantities(hexData) {
-    if (!hexData.resources || hexData.resources.length === 0) {
-        return 'None';
+    formatResourcesWithQuantities(hexData) {
+        if (!hexData.resources || hexData.resources.length === 0) {
+            return 'None';
+        }
+        
+        const quantities = hexData.resource_quantities || {};
+        
+        return hexData.resources.map(resource => {
+            const qty = quantities[resource];
+            return qty ? `${qty} ${resource}` : resource;
+        }).join(', ');
     }
-    
-    const quantities = hexData.resource_quantities || {};
-    
-    return hexData.resources.map(resource => {
-        const qty = quantities[resource];
-        return qty ? `${qty} ${resource}` : resource;
-    }).join(', ');
 }
 
 // Initialize hex map when page loads
