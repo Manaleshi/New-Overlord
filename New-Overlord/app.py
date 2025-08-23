@@ -435,7 +435,8 @@ def generate_world():
                 world_data['hexes'][f'{x},{y}'] = {
                     'coordinates': {'x': x, 'y': y},
                     'terrain': terrain,
-                    'resources': get_terrain_resources(terrain)
+                    'resources': get_terrain_resources(terrain),
+                    'resource_quantities': generate_resource_quantities(terrain)
                 }
         
         # Run terrain clustering for geographic names
@@ -686,9 +687,56 @@ def get_terrain_resources(terrain):
     }
     return resource_map.get(terrain, [])
 
+def generate_resource_quantities(terrain):
+    """Generate monthly resource production quantities by terrain type"""
+    
+    resource_ranges = {
+        'plains': {
+            'grain': (8, 25),
+            'horses': (0, 18), 
+            'stone': (0, 5)
+        },
+        'hills': {
+            'stone': (5, 20),
+            'iron': (2, 12),
+            'grain': (0, 8)
+        },
+        'mountains': {
+            'stone': (15, 40),
+            'iron': (8, 25),
+            'gems': (0, 3)
+        },
+        'forests': {
+            'wood': (10, 35),
+            'herbs': (3, 15),
+            'stone': (0, 5)
+        },
+        'swamps': {
+            'herbs': (5, 20),
+            'fish': (2, 12),
+            'wood': (0, 8)
+        },
+        'deserts': {
+            'stone': (3, 15),
+            'gems': (0, 5)
+        },
+        'water': {
+            'fish': (12, 30)
+        }
+    }
+    
+    ranges = resource_ranges.get(terrain, {})
+    quantities = {}
+    
+    for resource, (min_qty, max_qty) in ranges.items():
+        quantities[resource] = random.randint(min_qty, max_qty)
+    
+    return quantities
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
