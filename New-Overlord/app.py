@@ -563,7 +563,7 @@ def generate_world():
         world_data = assign_location_ids(world_data)
         
         # Store in session for movement calculations
-        session['current_world'] = world_data
+        set_current_world(world_data)
         
         return jsonify(world_data)
         
@@ -785,6 +785,7 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
