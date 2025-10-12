@@ -663,7 +663,7 @@ def update_world_data():
         world_data = data.get('world_data')
         
         if world_data:
-            session['current_world'] = world_data
+            set_current_world(world_data)
             return jsonify({'status': 'success'})
         else:
             return jsonify({'error': 'No world data provided'}), 400
@@ -785,6 +785,7 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
