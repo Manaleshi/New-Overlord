@@ -8,6 +8,55 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = 'overlord_secret_key_for_sessions'
 
+# ========== WORLD DATA ABSTRACTION LAYER ==========
+# Add these functions right after your imports, before the NameGenerator class
+
+def get_current_world():
+    """
+    Load the current active world from disk.
+    Returns None if no active world exists.
+    """
+    try:
+        filepath = 'worlds/active-world.json'
+        if not os.path.exists(filepath):
+            return None
+        
+        with open(filepath, 'r') as f:
+            world_data = json.load(f)
+        
+        return world_data
+    except Exception as e:
+        print(f"Error loading current world: {e}")
+        return None
+
+
+def set_current_world(world_data):
+    """
+    Save world data as the current active world.
+    This automatically saves to worlds/active-world.json
+    """
+    try:
+        # Ensure worlds directory exists
+        os.makedirs('worlds', exist_ok=True)
+        
+        # Save as active world
+        filepath = 'worlds/active-world.json'
+        with open(filepath, 'w') as f:
+            json.dump(world_data, f, indent=2)
+        
+        print(f"Active world saved successfully")
+        return True
+    except Exception as e:
+        print(f"Error saving current world: {e}")
+        return False
+
+
+def has_current_world():
+    """
+    Check if there's an active world available.
+    """
+    return os.path.exists('worlds/active-world.json')
+
 class NameGenerator:
     def __init__(self, config_dir='config'):
         self.config_dir = config_dir
@@ -736,6 +785,7 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
