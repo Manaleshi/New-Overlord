@@ -466,52 +466,66 @@ def generate_world():
             for x, y in cluster['hexes']:
                 cluster_assignments[f'{x},{y}'] = cluster_name
         
+        # NEW CODE - REPLACE WITH THIS:
+        # First, assign geographic names to all hexes
+        for hex_key, hex_data in world_data['hexes'].items():
+            hex_data['geographic_name'] = cluster_assignments.get(hex_key, f"{hex_data['terrain'].title()} Region")
+        
+        # Pre-select settlement locations for even distribution
         settlement_density = params.get('settlement_density', 0.3)
         total_hexes = width * height
         target_settlements = max(1, int(total_hexes * settlement_density))
-        settlements_placed = 0
         
+        # Get all non-water hexes (can't place settlements on water)
+        eligible_hexes = [
+            hex_key for hex_key, hex_data in world_data['hexes'].items()
+            if hex_data['terrain'] != 'water'
+        ]
+        
+        # Randomly select which hexes get settlements
+        random.shuffle(eligible_hexes)
+        settlement_hexes = set(eligible_hexes[:target_settlements])
+        
+        # Place settlements in pre-selected hexes and calculate economics for ALL hexes
         for hex_key, hex_data in world_data['hexes'].items():
-            hex_data['geographic_name'] = cluster_assignments.get(hex_key, f"{hex_data['terrain'].title()} Region")
+            if hex_key in settlement_hexes:
+                # Determine settlement type
+                settlement_type = random.choices(
+                    ['village', 'town', 'city'],
+                    weights=[0.7, 0.25, 0.05]
+                )[0]
+                
+                # Settlement population
+                if settlement_type == 'village':
+                    settlement_pop = random.randint(200, 800)
+                elif settlement_type == 'town':
+                    settlement_pop = random.randint(800, 3000)
+                else:  # city
+                    settlement_pop = random.randint(3000, 10000)
+                
+                settlement_name = name_generator.generate_settlement_name(
+                    hex_data['terrain'], 
+                    settlement_type
+                )
+                
+                hex_data['population_center'] = {
+                    'name': settlement_name,
+                    'type': settlement_type,
+                    'population': settlement_pop
+                }
             
-            if settlements_placed < target_settlements:
-                settlement_chance = settlement_density * 1.5
-                if hex_data['terrain'] == 'water':
-                    continue
-                if random.random() < settlement_chance:
-                    settlement_type = random.choices(
-                        ['village', 'town', 'city'],
-                        weights=[0.7, 0.25, 0.05]
-                    )[0]
-                    
-                    if settlement_type == 'village':
-                        settlement_pop = random.randint(200, 800)
-                    elif settlement_type == 'town':
-                        settlement_pop = random.randint(800, 3000)
-                    else:
-                        settlement_pop = random.randint(3000, 10000)
-                    
-                    settlement_name = name_generator.generate_settlement_name(
-                        hex_data['terrain'], 
-                        settlement_type
-                    )
-                    
-                    hex_data['population_center'] = {
-                        'name': settlement_name,
-                        'type': settlement_type,
-                        'population': settlement_pop
-                    }
-                    settlements_placed += 1
-            
+            # Generate total population (rural + settlement) for ALL hexes
             settlement_data = hex_data.get('population_center')
             hex_data['population'] = generate_population(hex_data['terrain'], settlement_data)
             
+            # Calculate economics for this hex
             economics = economic_calculator.calculate_economics(
                 hex_data['population'],
                 settlement_data,
                 hex_data['terrain']
             )
             
+            # Store economic data in hex
             hex_data['economics'] = economics
         
         world_data = assign_location_ids(world_data)
@@ -727,3 +741,4 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
