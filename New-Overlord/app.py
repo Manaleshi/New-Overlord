@@ -9,7 +9,6 @@ app = Flask(__name__)
 app.secret_key = 'overlord_secret_key_for_sessions'
 
 # ========== WORLD DATA ABSTRACTION LAYER ==========
-# Add these functions right after your imports, before the NameGenerator class
 
 def get_current_world():
     """
@@ -57,6 +56,9 @@ def has_current_world():
     """
     return os.path.exists('worlds/active-world.json')
 
+
+# ========== EXISTING CLASSES ==========
+
 class NameGenerator:
     def __init__(self, config_dir='config'):
         self.config_dir = config_dir
@@ -80,24 +82,19 @@ class NameGenerator:
         if not self.settlement_data:
             return f"Settlement_{random.randint(1000, 9999)}"
         
-        # Get cultural preferences for terrain
         cultural_preferences = self.settlement_data.get("terrain_cultural_preferences", {})
         possible_cultures = cultural_preferences.get(terrain_type, ["fantasy"])
         
         if not possible_cultures:
             possible_cultures = ["fantasy"]
         
-        # Choose a random culture
         culture = random.choice(possible_cultures)
-        
-        # Get naming style for culture
         naming_styles = self.settlement_data.get("cultural_naming_styles", {})
         style_data = naming_styles.get(culture, {})
         
         if not style_data:
             return f"Settlement_{random.randint(1000, 9999)}"
         
-        # Generate name based on pattern
         patterns = style_data.get("patterns", ["prefix + suffix"])
         pattern = random.choice(patterns)
         
@@ -113,7 +110,6 @@ class NameGenerator:
         else:
             name = random.choice(prefixes) + random.choice(suffixes)
         
-        # Ensure uniqueness
         original_name = name
         counter = 1
         while name in self.used_names:
@@ -133,7 +129,6 @@ class NameGenerator:
         if not terrain_features:
             return f"{terrain_type.title()} Region"
         
-        # Choose feature type based on cluster size
         if cluster_size >= 5:
             feature_types = terrain_features.get("large", terrain_features.get("medium", terrain_features.get("small", ["Region"])))
         elif cluster_size >= 3:
@@ -142,14 +137,11 @@ class NameGenerator:
             feature_types = terrain_features.get("small", ["Region"])
         
         feature_type = random.choice(feature_types)
-        
-        # Generate descriptive name
         descriptors = terrain_features.get("descriptors", ["Great", "Ancient"])
         descriptor = random.choice(descriptors)
         
         name = f"{descriptor} {feature_type}"
         
-        # Ensure uniqueness
         original_name = name
         counter = 1
         while name in self.used_names:
@@ -169,20 +161,17 @@ class TerrainClusterer:
     def get_neighbors(self, x, y):
         neighbors = []
         
-        # Hexagonal neighbors for vertical column layout
-        if x % 2 == 0:  # Even column
+        if x % 2 == 0:
             deltas = [(-1, -1), (-1, 0), (0, -1), (0, 1), (1, -1), (1, 0)]
-        else:  # Odd column
+        else:
             deltas = [(-1, 0), (-1, 1), (0, -1), (0, 1), (1, 0), (1, 1)]
         
         for dx, dy in deltas:
             nx, ny = x + dx, y + dy
             
-            # Handle east-west wrapping
             if self.wrap_ew:
                 nx = nx % self.width
             
-            # Check bounds
             if 0 <= nx < self.width and 0 <= ny < self.height:
                 neighbors.append((nx, ny))
         
@@ -225,7 +214,6 @@ class TerrainClusterer:
             visited.add((x, y))
             cluster.append((x, y))
             
-            # Add neighbors to stack
             for nx, ny in self.get_neighbors(x, y):
                 if (nx, ny) not in visited:
                     stack.append((nx, ny))
@@ -234,7 +222,6 @@ class TerrainClusterer:
 
 class MovementCalculator:
     def __init__(self):
-        # Use built-in default data instead of trying to load file
         self.movement_data = {
             "base_movement": {
                 "plains": {"exit": 1, "enter": 1},
@@ -256,25 +243,21 @@ class MovementCalculator:
         base_data = self.movement_data['base_movement']
         mode_data = self.movement_data['movement_modes']
         
-        # Handle impassable terrain
         if (from_terrain == 'water' or to_terrain == 'water') and mode != 'flying':
             return 'impassable'
         
-        # Calculate base time
         exit_time = base_data.get(from_terrain, {}).get('exit', 2)
         enter_time = base_data.get(to_terrain, {}).get('enter', 2)
         base_time = exit_time + enter_time
         
-        # Add random variation
         variation = random.randint(-1, 2)
         total_time = max(1, base_time + variation)
         
-        # Apply movement mode
         if mode == 'flying':
             return mode_data['flying']['base_time']
         elif mode == 'riding':
             return max(1, int(total_time * mode_data['riding']['multiplier']))
-        else:  # walking
+        else:
             return total_time
             
 class EconomicCalculator:
@@ -283,9 +266,6 @@ class EconomicCalculator:
         self.base_tax_rate = 0.15
         
     def calculate_economics(self, population, settlement_data=None, terrain='plains'):
-        """Calculate wages and taxes for a hex"""
-        
-        # Base rural economics
         rural_population = population
         settlement_population = 0
         
@@ -293,10 +273,9 @@ class EconomicCalculator:
             settlement_population = settlement_data.get('population', 0)
             rural_population = max(0, population - settlement_population)
         
-        # Calculate rural wages (affected by total population density)
         total_pop = population
         if total_pop < 100:
-            wage_modifier = 1.3  # Higher wages in low population areas
+            wage_modifier = 1.3
         elif total_pop < 500:
             wage_modifier = 1.1
         elif total_pop < 2000:
@@ -304,9 +283,8 @@ class EconomicCalculator:
         elif total_pop < 5000:
             wage_modifier = 0.9
         else:
-            wage_modifier = 0.8  # Lower wages in crowded areas
+            wage_modifier = 0.8
         
-        # Terrain affects wages
         terrain_modifiers = {
             'plains': 1.0,
             'hills': 1.1,
@@ -319,18 +297,14 @@ class EconomicCalculator:
         
         terrain_mod = terrain_modifiers.get(terrain, 1.0)
         rural_wages = int(self.base_wage * wage_modifier * terrain_mod)
-        
-        # Calculate rural taxes
         rural_taxes = int(rural_population * rural_wages * self.base_tax_rate)
         
-        # Settlement economics (if present)
         settlement_wages = None
         settlement_taxes = None
         
         if settlement_data:
             settlement_type = settlement_data.get('type', 'village')
             
-            # Settlement wage bonuses
             settlement_wage_bonus = {
                 'village': 1.2,
                 'town': 1.5,
@@ -340,7 +314,6 @@ class EconomicCalculator:
             bonus = settlement_wage_bonus.get(settlement_type, 1.2)
             settlement_wages = int(rural_wages * bonus)
             
-            # Settlement tax efficiency (better infrastructure = higher tax rate)
             settlement_tax_efficiency = {
                 'village': 0.18,
                 'town': 0.22,
@@ -368,6 +341,8 @@ class EconomicCalculator:
 # Initialize global instances
 name_generator = NameGenerator()
 economic_calculator = EconomicCalculator()
+
+# ========== ROUTES ==========
 
 @app.route('/')
 def index():
@@ -422,7 +397,6 @@ def get_settlement_names():
         return jsonify({"error": "Settlement names configuration not found"}), 404
 
 def assign_location_ids(world_data):
-    """Assign unique location IDs to each hex"""
     location_counter = 1000 + random.randint(0, 8000)
     
     for hex_key in world_data['hexes']:
@@ -432,9 +406,6 @@ def assign_location_ids(world_data):
     return world_data
 
 def generate_population(terrain, settlement_data):
-    """Generate population for a hex based on terrain and settlement"""
-    
-    # Base rural population by terrain
     base_population = {
         'plains': random.randint(100, 800),
         'hills': random.randint(50, 400),
@@ -446,8 +417,6 @@ def generate_population(terrain, settlement_data):
     }
     
     rural_pop = base_population.get(terrain, 100)
-    
-    # Add settlement population
     total_population = rural_pop
     if settlement_data:
         total_population += settlement_data['population']
@@ -459,14 +428,12 @@ def generate_world():
     try:
         data = request.get_json()
         width = data.get('width', 5)
-        # Ensure width is even for proper hex layout
         if width % 2 != 0:
-            width += 1  # Round up to next even number
+            width += 1
         height = data.get('height', 5)
         terrain_types = data.get('terrain_types', ['plains', 'hills', 'forests'])
         params = data.get('params', {})
         
-        # Initialize world structure
         world_data = {
             'metadata': {
                 'name': params.get('name', 'Generated World'),
@@ -477,7 +444,6 @@ def generate_world():
             'hexes': {}
         }
         
-        # Generate terrain for each hex
         for x in range(width):
             for y in range(height):
                 terrain = random.choice(terrain_types)
@@ -488,11 +454,9 @@ def generate_world():
                     'resource_quantities': generate_resource_quantities(terrain)
                 }
         
-        # Run terrain clustering for geographic names
         clusterer = TerrainClusterer(world_data)
         clusters = clusterer.find_clusters()
         
-        # Assign geographic names to clusters
         cluster_assignments = {}
         for cluster in clusters:
             cluster_name = name_generator.generate_geographic_name(
@@ -502,35 +466,29 @@ def generate_world():
             for x, y in cluster['hexes']:
                 cluster_assignments[f'{x},{y}'] = cluster_name
         
-        # Assign geographic names and generate settlements
         settlement_density = params.get('settlement_density', 0.3)
         total_hexes = width * height
         target_settlements = max(1, int(total_hexes * settlement_density))
         settlements_placed = 0
         
         for hex_key, hex_data in world_data['hexes'].items():
-            # Assign geographic name
             hex_data['geographic_name'] = cluster_assignments.get(hex_key, f"{hex_data['terrain'].title()} Region")
             
-            # Generate settlement (probabilistic)
             if settlements_placed < target_settlements:
-                settlement_chance = settlement_density * 1.5  # Boost chance for remaining slots
-                # Skip water hexes - no settlements on water
+                settlement_chance = settlement_density * 1.5
                 if hex_data['terrain'] == 'water':
                     continue
                 if random.random() < settlement_chance:
-                    # Determine settlement type
                     settlement_type = random.choices(
                         ['village', 'town', 'city'],
                         weights=[0.7, 0.25, 0.05]
                     )[0]
                     
-                    # Settlement population
                     if settlement_type == 'village':
                         settlement_pop = random.randint(200, 800)
                     elif settlement_type == 'town':
                         settlement_pop = random.randint(800, 3000)
-                    else:  # city
+                    else:
                         settlement_pop = random.randint(3000, 10000)
                     
                     settlement_name = name_generator.generate_settlement_name(
@@ -545,24 +503,20 @@ def generate_world():
                     }
                     settlements_placed += 1
             
-            # Generate total population (rural + settlement)
             settlement_data = hex_data.get('population_center')
             hex_data['population'] = generate_population(hex_data['terrain'], settlement_data)
             
-            # Calculate economics for this hex
             economics = economic_calculator.calculate_economics(
                 hex_data['population'],
                 settlement_data,
                 hex_data['terrain']
             )
             
-            # Store economic data in hex
             hex_data['economics'] = economics
         
-        # Assign location IDs
         world_data = assign_location_ids(world_data)
         
-        # Store in session for movement calculations
+        # Save as current active world
         set_current_world(world_data)
         
         return jsonify(world_data)
@@ -574,9 +528,9 @@ def generate_world():
 @app.route('/api/hex-movement/<int:x>/<int:y>')
 def get_hex_movement(x, y):
     try:
-       world_data = get_current_world()
-       if not world_data:
-          return jsonify({'error': 'No active world loaded'}), 400
+        world_data = get_current_world()
+        if not world_data:
+            return jsonify({'error': 'No active world loaded'}), 400
         
         clusterer = TerrainClusterer(world_data)
         neighbors = clusterer.get_neighbors(x, y)
@@ -588,26 +542,22 @@ def get_hex_movement(x, y):
         current_terrain = current_hex['terrain']
         calculator = MovementCalculator()
         
-        # Direction mapping for hexagonal layout
         direction_map = {}
         all_possible_directions = ['NW', 'N', 'NE', 'SE', 'S', 'SW']
 
-        # Calculate all 6 potential neighbor positions
         potential_neighbors = []
-        if x % 2 == 0:  # Even column
+        if x % 2 == 0:
             deltas = [(-1, -1), (0, -1), (1, -1), (1, 0), (0, 1), (-1, 0)]
-        else:  # Odd column
+        else:
             deltas = [(-1, 0), (0, -1), (1, 0), (1, 1), (0, 1), (-1, 1)]
 
         for i, (dx, dy) in enumerate(deltas):
             nx, ny = x + dx, y + dy
             direction = all_possible_directions[i]
     
-            # Handle east-west wrapping
             if world_data['metadata']['wrap']['east_west']:
                 nx = nx % world_data['metadata']['size']['width']
     
-            # Check if neighbor exists
             if (0 <= nx < world_data['metadata']['size']['width'] and 
                 0 <= ny < world_data['metadata']['size']['height']):
                 neighbor_hex = world_data['hexes'].get(f'{nx},{ny}')
@@ -615,7 +565,6 @@ def get_hex_movement(x, y):
                 if neighbor_hex:
                     neighbor_terrain = neighbor_hex['terrain']
             
-                    # Calculate movement times
                     walking_time = calculator.calculate_movement_time(current_terrain, neighbor_terrain, 'walking')
                     riding_time = calculator.calculate_movement_time(current_terrain, neighbor_terrain, 'riding')
                     flying_time = calculator.calculate_movement_time(current_terrain, neighbor_terrain, 'flying')
@@ -631,7 +580,6 @@ def get_hex_movement(x, y):
                         }
                     }
             else:
-                # No neighbor exists - mark as impassable
                 direction_map[direction] = {
                     'destination': 'World Edge',
                     'location_id': 'N/A',
@@ -643,8 +591,6 @@ def get_hex_movement(x, y):
                         'note': 'World boundary'
                     }
                 }
-            
-            
         
         return jsonify({
             'hex': f'{x},{y}',
@@ -681,10 +627,8 @@ def save_world():
         if not world_data:
             return jsonify({'error': 'No world data provided'}), 400
         
-        # Ensure worlds directory exists
         os.makedirs('worlds', exist_ok=True)
         
-        # Save file
         filepath = f'worlds/{filename}.json'
         with open(filepath, 'w') as f:
             json.dump(world_data, f, indent=2)
@@ -701,7 +645,7 @@ def load_world(filename):
         with open(filepath, 'r') as f:
             world_data = json.load(f)
         
-        # Store in session
+        # Set as current active world
         set_current_world(world_data)
         
         return jsonify(world_data)
@@ -737,8 +681,6 @@ def get_terrain_resources(terrain):
     return resource_map.get(terrain, [])
 
 def generate_resource_quantities(terrain):
-    """Generate monthly resource production quantities by terrain type"""
-    
     resource_ranges = {
         'plains': {
             'grain': (8, 25),
@@ -785,18 +727,3 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
