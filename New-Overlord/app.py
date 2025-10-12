@@ -574,9 +574,9 @@ def generate_world():
 @app.route('/api/hex-movement/<int:x>/<int:y>')
 def get_hex_movement(x, y):
     try:
-        world_data = session.get('current_world')
-        if not world_data:
-            return jsonify({'error': 'No world data in session'}), 400
+       world_data = get_current_world()
+       if not world_data:
+          return jsonify({'error': 'No active world loaded'}), 400
         
         clusterer = TerrainClusterer(world_data)
         neighbors = clusterer.get_neighbors(x, y)
@@ -785,6 +785,7 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
