@@ -782,6 +782,12 @@ def lock_world():
         print(f"Error locking world: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/game-status')
+def get_game_status_endpoint():
+    """Get current game status"""
+    status = get_game_status()
+    return jsonify(status)
+
 def get_terrain_resources(terrain):
     resource_map = {
         'plains': ['grain', 'horses'],
@@ -841,6 +847,7 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
