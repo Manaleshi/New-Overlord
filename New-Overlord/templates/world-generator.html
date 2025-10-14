@@ -74,10 +74,11 @@
                     </div>
                     
                     <div class="action-buttons">
-                        <button class="btn" onclick="generateWorld()">Generate World</button>
-                        <button class="btn btn-secondary" onclick="saveWorld()">Save World</button>
-                        <button class="btn btn-secondary" onclick="loadWorld()">Load World</button>
-                        <button class="btn btn-secondary" onclick="exportWorld()">Export World</button>
+                        <button onclick="generateWorld()">Generate World</button>
+                        <button onclick="saveWorld()">Save World</button>
+                        <button onclick="loadWorld()">Load World</button>
+                        <button onclick="exportWorld()">Export World</button>
+                        <button onclick="lockWorldForGame()" id="lock-world-btn" class="btn-lock">🔒 Lock World for Game</button>
                     </div>
                     
                     <div class="terrain-editor">
@@ -111,4 +112,5 @@
     <script src="{{ url_for('static', filename='js/world-generator.js') }}"></script>
 </body>
 </html>
+
 
