@@ -86,7 +86,35 @@
             <p>&copy; 2024 New Overlord Project | Inspired by Vincent Archer's Original Overlord</p>
         </footer>
     </div>
-</body>
 
+    <script>
+        // Check game status and show/hide faction button
+        async function checkGameStatus() {
+            try {
+                const response = await fetch('/api/game-status');
+                const status = await response.json();
+                
+                const factionCard = document.querySelector('.card:first-child');
+                const createBtn = factionCard.querySelector('.btn');
+                
+                if (!status.game_ready) {
+                    // Game not ready - disable button and show message
+                    createBtn.style.display = 'none';
+                    const message = document.createElement('p');
+                    message.style.cssText = 'color: #ff9800; font-weight: bold; margin-top: 1rem;';
+                    message.textContent = '⏳ Game is being prepared by the GM...';
+                    factionCard.appendChild(message);
+                }
+            } catch (error) {
+                console.error('Error checking game status:', error);
+            }
+        }
+        
+        // Check on page load
+        document.addEventListener('DOMContentLoaded', checkGameStatus);
+    </script>
+</body>
+    
 </html>
+
 
