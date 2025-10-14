@@ -310,3 +310,86 @@ function checkStatus() {
     console.log('Generate button:', document.querySelector('button[onclick="generateWorld()"]') ? 'Found' : 'Not found');
     console.log('Terrain checkboxes:', document.querySelectorAll('#terrain-types input[type="checkbox"]').length);
 }
+
+async function lockWorldForGame() {
+    if (!currentWorldData) {
+        alert('No world to lock. Generate a world first.');
+        return;
+    }
+    
+    const confirmLock = confirm(
+        'Lock this world for the game?\n\n' +
+        '⚠️ WARNING: This cannot be undone!\n' +
+        '- World will be locked permanently\n' +
+        '- Players can create factions\n' +
+        '- World generator will be disabled\n' +
+        '- Game will begin\n\n' +
+        'Are you sure?'
+    );
+    
+    if (!confirmLock) return;
+    
+    try {
+        const response = await fetch('/api/lock-world', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to lock world');
+        }
+        
+        const result = await response.json();
+        
+        alert('✅ World Locked Successfully!\n\nGame is now ready for players to create factions.');
+        
+        // Disable the interface
+        disableGeneratorInterface();
+        
+    } catch (error) {
+        console.error('Error locking world:', error);
+        alert('Error locking world: ' + error.message);
+    }
+}
+
+function disableGeneratorInterface() {
+    // Disable all generation buttons
+    const buttons = document.querySelectorAll('button');
+    buttons.forEach(btn => {
+        if (btn.id !== 'lock-world-btn') {
+            btn.disabled = true;
+        }
+    });
+    
+    // Change lock button text
+    const lockBtn = document.getElementById('lock-world-btn');
+    if (lockBtn) {
+        lockBtn.textContent = '🔒 World Locked';
+        lockBtn.disabled = true;
+    }
+    
+    // Show locked message
+    const container = document.querySelector('.generator-controls');
+    if (container) {
+        const lockedMsg = document.createElement('div');
+        lockedMsg.style.cssText = 'background: #fff3cd; padding: 1rem; margin-top: 1rem; border-radius: 4px; border: 2px solid #ffc107;';
+        lockedMsg.innerHTML = '<strong>🔒 World Locked for Active Game</strong><br>World generator is disabled. <a href="/">Return to Home</a>';
+        container.appendChild(lockedMsg);
+    }
+}
+
+async function checkIfWorldLocked() {
+    try {
+        const response = await fetch('/api/game-status');
+        const status = await response.json();
+        
+        if (status.world_locked) {
+            disableGeneratorInterface();
+        }
+    } catch (error) {
+        console.error('Error checking game status:', error);
+    }
+}
