@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (densitySlider) {
         densitySlider.addEventListener('input', updateDensityDisplay);
     }
+    
+    // Check if world is locked
+    checkIfWorldLocked();
 });
 
 function updateDensityDisplay() {
