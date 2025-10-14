@@ -28,7 +28,6 @@ def get_current_world():
         print(f"Error loading current world: {e}")
         return None
 
-
 def set_current_world(world_data):
     """
     Save world data as the current active world.
@@ -716,6 +715,73 @@ def list_worlds():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/lock-world', methods=['POST'])
+def lock_world():
+    """Lock the current world for game - makes it ready for players"""
+    try:
+        # Check if world exists
+        world = get_current_world()
+        if not world:
+            return jsonify({'error': 'No world to lock'}), 400
+        
+        # Check if already locked
+        if is_world_locked():
+            return jsonify({'error': 'World is already locked'}), 400
+        
+        # Create game status
+        status = {
+            "game_ready": True,
+            "world_locked": True,
+            "world_file": "active-world.json",
+            "locked_at": datetime.now().isoformat(),
+            "game_started_at": None,  # Will be set when first faction created
+            "turn_number": 0,
+            "factions_count": 0
+        }
+        set_game_status(status)
+        
+        # Initialize empty factions file
+        factions_data = {
+            "factions": {},
+            "faction_counter": 0
+        }
+        os.makedirs('factions', exist_ok=True)
+        with open('factions/active-factions.json', 'w') as f:
+            json.dump(factions_data, f, indent=2)
+        
+        # Initialize empty game file
+        game_data = {
+            "game_metadata": {
+                "world_file": "active-world.json",
+                "factions_file": "active-factions.json",
+                "turn_number": 0,
+                "current_day": 1,
+                "current_season": "summer",
+                "created_at": datetime.now().isoformat()
+            },
+            "units": {},
+            "location_index": {},
+            "faction_index": {},
+            "pending_orders": {},
+            "structures": {},
+            "unit_counter": 0
+        }
+        os.makedirs('games', exist_ok=True)
+        with open('games/active-game.json', 'w') as f:
+            json.dump(game_data, f, indent=2)
+        
+        print(f"World locked successfully at {status['locked_at']}")
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'World locked for game',
+            'locked_at': status['locked_at']
+        })
+        
+    except Exception as e:
+        print(f"Error locking world: {e}")
+        return jsonify({'error': str(e)}), 500
+
 def get_terrain_resources(terrain):
     resource_map = {
         'plains': ['grain', 'horses'],
@@ -775,5 +841,6 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
