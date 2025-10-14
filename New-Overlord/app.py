@@ -56,6 +56,40 @@ def has_current_world():
     """
     return os.path.exists('worlds/active-world.json')
 
+# ========== GAME STATUS ABSTRACTION LAYER ==========
+
+def get_game_status():
+    """Load game status from game-status.json"""
+    try:
+        with open('game-status.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        # Return default status if file doesn't exist
+        return {
+            "game_ready": False,
+            "world_locked": False,
+            "world_file": None,
+            "locked_at": None,
+            "game_started_at": None,
+            "turn_number": 0,
+            "factions_count": 0
+        }
+
+def set_game_status(status_data):
+    """Save game status to game-status.json"""
+    with open('game-status.json', 'w') as f:
+        json.dump(status_data, f, indent=2)
+
+def is_game_ready():
+    """Quick check if game is ready for players"""
+    status = get_game_status()
+    return status.get('game_ready', False)
+
+def is_world_locked():
+    """Quick check if world is locked"""
+    status = get_game_status()
+    return status.get('world_locked', False)
+
 
 # ========== EXISTING CLASSES ==========
 
@@ -741,4 +775,5 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
