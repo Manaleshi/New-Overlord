@@ -3,88 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Overlord - Fantasy Strategy Game</title>
+    <title>New Overlord - Home</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .hero-section {
+            text-align: center;
+            padding: 3rem 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        
+        .hero-section h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .hero-section p {
+            font-size: 1.3rem;
+            opacity: 0.9;
+        }
+        
+        .action-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        
+        .card p {
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #45a049;
+        }
+        
+        .btn-secondary {
+            background: #667eea;
+        }
+        
+        .btn-secondary:hover {
+            background: #5568d3;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>New Overlord</h1>
-            <p class="subtitle">Modern Recreation of the Classic Fantasy Strategy Game</p>
-        </header>
+        <div class="hero-section">
+            <h1>🏰 New Overlord</h1>
+            <p>A play-by-turn fantasy strategy game</p>
+            <p style="font-size: 1rem; opacity: 0.8;">Inspired by Vincent Archer's classic game</p>
+        </div>
 
-        <main>
-            <div class="welcome-section">
-                <h2>Welcome to New Overlord</h2>
-                <p>A faithful recreation of Vincent Archer's legendary play-by-email fantasy strategy game, now modernized for the web.</p>
-                
-                <div class="game-features">
-                    <div class="feature">
-                        <h3>🗺️ World Building</h3>
-                        <p>Create rich, detailed fantasy worlds with varied terrain, resources, and civilizations.</p>
-                    </div>
-                    
-                    <div class="feature">
-                        <h3>⚔️ Strategic Gameplay</h3>
-                        <p>Command factions, manage resources, engage in diplomacy, and wage epic battles.</p>
-                    </div>
-                    
-                    <div class="feature">
-                        <h3>🎯 Turn-Based</h3>
-                        <p>Experience the classic rhythm of planning, submitting orders, and anticipating results.</p>
-                    </div>
-                </div>
+        <div class="action-cards">
+            <div class="card">
+                <div class="card-icon">⚔️</div>
+                <h2>Start New Faction</h2>
+                <p>Begin your conquest of the realm. Create your faction, choose your starting location, and build your empire.</p>
+                <a href="/faction-setup" class="btn">Create Faction</a>
             </div>
 
-            <div class="tools-section">
-                <h2>Game Tools</h2>
-                <div class="tool-grid">
-                    <div class="tool-card">
-                        <h3>World Generator</h3>
-                        <p>Create and customize game worlds with terrain, populations, and resources.</p>
-                        <a href="/world-generator" class="btn btn-primary">Open World Generator</a>
-                    </div>
-                    
-                    <div class="tool-card coming-soon">
-                        <h3>Game Engine</h3>
-                        <p>Process turns, manage factions, and run the core game mechanics.</p>
-                        <span class="btn btn-disabled">Coming Soon</span>
-                    </div>
-                    
-                    <div class="tool-card coming-soon">
-                        <h3>Player Interface</h3>
-                        <p>Submit orders, view reports, and communicate with other players.</p>
-                        <span class="btn btn-disabled">Coming Soon</span>
-                    </div>
-                </div>
+            <div class="card">
+                <div class="card-icon">🗺️</div>
+                <h2>Generate World</h2>
+                <p>Create a new world for conquest. Design terrain, place settlements, and prepare the stage for epic battles.</p>
+                <a href="/world-generator" class="btn btn-secondary">World Generator</a>
             </div>
 
-            <div class="project-info">
-                <h2>Project Status</h2>
-                <div class="status-grid">
-                    <div class="status-item completed">
-                        <span class="status-icon">✅</span>
-                        <span>World Generator</span>
-                    </div>
-                    <div class="status-item in-progress">
-                        <span class="status-icon">🔄</span>
-                        <span>Core Game Engine</span>
-                    </div>
-                    <div class="status-item planned">
-                        <span class="status-icon">📋</span>
-                        <span>Player Interface</span>
-                    </div>
-                    <div class="status-item planned">
-                        <span class="status-icon">🎮</span>
-                        <span>Advanced Features</span>
-                    </div>
-                </div>
+            <div class="card">
+                <div class="card-icon">📊</div>
+                <h2>Game Status</h2>
+                <p>View current game state, active factions, and game statistics.</p>
+                <a href="/game-status" class="btn btn-secondary">View Status</a>
             </div>
-        </main>
+        </div>
 
-        <footer>
-            <p>&copy; 2024 New Overlord Project | Inspired by Vincent Archer's Original Overlord</p>
-        </footer>
+        <div style="margin-top: 3rem; padding: 2rem; background: #f9f9f9; border-radius: 8px;">
+            <h3 style="text-align: center; color: #333;">Quick Start Guide</h3>
+            <ol style="max-width: 600px; margin: 1rem auto; line-height: 1.8;">
+                <li><strong>Generate a World:</strong> Create the game map with terrain and settlements</li>
+                <li><strong>Lock the World:</strong> Click "Lock World for Game" when ready</li>
+                <li><strong>Start Your Faction:</strong> Choose a starting location and create your faction</li>
+                <li><strong>Submit Orders:</strong> Plan your moves, studies, and actions for the turn</li>
+                <li><strong>Process Turn:</strong> Watch as your orders execute over 30 game days</li>
+                <li><strong>Read Report:</strong> See what happened and plan your next move</li>
+            </ol>
+        </div>
     </div>
 
     <script>
@@ -98,7 +140,7 @@
                 const createBtn = factionCard.querySelector('.btn');
                 
                 if (!status.game_ready) {
-                    // Game not ready - disable button and show message
+                    // Game not ready - hide button and show message
                     createBtn.style.display = 'none';
                     const message = document.createElement('p');
                     message.style.cssText = 'color: #ff9800; font-weight: bold; margin-top: 1rem;';
@@ -114,7 +156,4 @@
         document.addEventListener('DOMContentLoaded', checkGameStatus);
     </script>
 </body>
-    
 </html>
-
-
