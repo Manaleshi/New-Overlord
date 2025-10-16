@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Overlord - Faction Setup</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏰 New Overlord - Faction Setup</h1>
+            <p class="subtitle">Begin your conquest of the realm</p>
+            <a href="/" style="color: white; text-decoration: underline;">← Return to Home</a>
+        </header>
+
+        <div class="setup-container">
+            <!-- Left side: Hex Map -->
+            <div class="map-section">
+                <h2>Choose Your Starting Location</h2>
+                <p class="instruction">Click a settlement (🏠 village, 🏘️ town, or 🏙️ city) to begin your faction there.</p>
+                
+                <div id="hex-grid" class="hex-grid"></div>
+                
+                <div id="location-info" class="location-panel">
+                    <p class="hint">Select a settlement to see details...</p>
+                </div>
+            </div>
+
+            <!-- Right side: Faction Setup Form -->
+            <div class="form-section">
+                <div id="setup-form-container" class="setup-form hidden">
+                    <h2>Create Your Faction</h2>
+                    
+                    <div class="form-group">
+                        <label for="faction-name">Faction Name:</label>
+                        <input type="text" id="faction-name" placeholder="The Northern Alliance" maxlength="50" required>
+                        <small>This is your empire's name</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="hero-name">Hero Name:</label>
+                        <input type="text" id="hero-name" placeholder="Lord Blackwood" maxlength="50" required>
+                        <small>Your starting leader's name</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="starting-type">Starting Type:</label>
+                        <select id="starting-type" required>
+                            <option value="">Choose your path...</option>
+                            <option value="general">General - Military Leader</option>
+                            <option value="mage">Mage - Arcane Wielder</option>
+                            <option value="adventurer">Adventurer - Explorer</option>
+                            <option value="craftsman">Craftsman - Builder</option>
+                        </select>
+                    </div>
+
+                    <div id="type-description" class="type-info hidden">
+                        <h3 id="type-name"></h3>
+                        <p id="type-desc"></p>
+                        <div id="type-details"></div>
+                        <p class="flavor-text" id="type-flavor"></p>
+                    </div>
+
+                    <!-- Mage element choice (hidden by default) -->
+                    <div id="element-choice" class="form-group hidden">
+                        <label for="starting-element">Choose Your Element:</label>
+                        <select id="starting-element">
+                            <option value="earth">Earth - Nature, production, resources</option>
+                            <option value="fire">Fire - Battle, destruction, alteration</option>
+                            <option value="water">Water - Healing, production, seas</option>
+                            <option value="air">Air - Movement, observation, creatures</option>
+                            <option value="void">Void - Knowledge, magic, death</option>
+                        </select>
+                    </div>
+
+                    <div class="starting-package">
+                        <h4>Starting Package:</h4>
+                        <ul>
+                            <li>1 Hero unit (you)</li>
+                            <li>50 Followers (unskilled troops)</li>
+                            <li>$5,000 faction funds</li>
+                            <li>1 Horse (equipped)</li>
+                            <li>Type-specific skills and equipment</li>
+                        </ul>
+                    </div>
+
+                    <button id="create-faction-btn" class="btn-primary" disabled>Create Faction</button>
+                    
+                    <div id="creation-status" class="status-message hidden"></div>
+                </div>
+
+                <div id="no-location-msg" class="info-message">
+                    <p>👈 Select a settlement on the map to begin</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/hex-map.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/faction-setup.js') }}"></script>
+</body>
+</html>
