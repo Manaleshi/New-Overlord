@@ -1,19 +1,10 @@
-// Faction Setup JavaScript
-let selectedLocation = null;
+// Player Registration JavaScript
 let startingTypes = null;
-let worldData = null;
 
-// Initialize when page loads
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('Faction Setup initialized');
+    console.log('Player Registration initialized');
     
-    // Load starting types
     await loadStartingTypes();
-    
-    // Load world and initialize hex map
-    await loadWorld();
-    
-    // Setup event listeners
     setupEventListeners();
 });
 
@@ -31,42 +22,18 @@ async function loadStartingTypes() {
     }
 }
 
-async function loadWorld() {
-    try {
-        const response = await fetch('/api/current-world');
-        if (!response.ok) {
-            alert('No world has been generated yet. Redirecting to home...');
-            window.location.href = '/';
-            return;
-        }
-        
-        worldData = await response.json();
-        console.log('World loaded:', worldData);
-        
-        // Initialize hex map in selection mode
-        if (window.hexMap) {
-            window.hexMap.loadWorld(worldData);
-            window.hexMap.setSelectionMode('settlement');
-        }
-        
-    } catch (error) {
-        console.error('Error loading world:', error);
-        alert('Error loading world. Please try again.');
-    }
-}
-
 function setupEventListeners() {
+    const form = document.getElementById('registration-form');
+    if (form) {
+        form.addEventListener('submit', handleRegistration);
+    }
+    
     const typeSelect = document.getElementById('starting-type');
     if (typeSelect) {
         typeSelect.addEventListener('change', handleTypeChange);
     }
     
-    const createBtn = document.getElementById('create-faction-btn');
-    if (createBtn) {
-        createBtn.addEventListener('click', createFaction);
-    }
-    
-    ['faction-name', 'hero-name', 'starting-type'].forEach(id => {
+    ['player-name', 'email', 'password', 'confirm-password', 'starting-type'].forEach(id => {
         const element = document.getElementById(id);
         if (element) {
             element.addEventListener('input', validateForm);
@@ -118,112 +85,85 @@ function handleTypeChange(event) {
 }
 
 function validateForm() {
-    const factionName = document.getElementById('faction-name').value.trim();
-    const heroName = document.getElementById('hero-name').value.trim();
+    const playerName = document.getElementById('player-name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
     const startingType = document.getElementById('starting-type').value;
     
-    const createBtn = document.getElementById('create-faction-btn');
-    const isValid = factionName && heroName && startingType && selectedLocation;
-    createBtn.disabled = !isValid;
+    const registerBtn = document.getElementById('register-btn');
+    
+    const isValid = playerName && email && password.length >= 6 && 
+                    password === confirmPassword && startingType;
+    
+    registerBtn.disabled = !isValid;
 }
 
-window.onHexSelected = function(x, y) {
-    const hexData = worldData.hexes[`${x},${y}`];
+async function handleRegistration(event) {
+    event.preventDefault();
     
-    if (!hexData.population_center) {
-        alert('You must start in a settlement (village, town, or city).');
-        return;
-    }
-    
-    selectedLocation = {
-        x: x,
-        y: y,
-        location_id: hexData.location_id,
-        settlement: hexData.population_center,
-        terrain: hexData.terrain
-    };
-    
-    displayLocationInfo(hexData);
-    
-    document.getElementById('setup-form-container').classList.remove('hidden');
-    document.getElementById('no-location-msg').classList.add('hidden');
-    
-    validateForm();
-};
-
-function displayLocationInfo(hexData) {
-    const locationInfo = document.getElementById('location-info');
-    const settlement = hexData.population_center;
-    
-    let icon = settlement.type === 'city' ? '🏙️' : settlement.type === 'town' ? '🏘️' : '🏠';
-    
-    locationInfo.innerHTML = `
-        <h3>Selected Starting Location</h3>
-        <div class="location-details">
-            <p><strong>${icon} ${settlement.name}</strong> [${hexData.location_id}]</p>
-            <p>Type: ${settlement.type.charAt(0).toUpperCase() + settlement.type.slice(1)}</p>
-            <p>Population: ${settlement.population.toLocaleString()}</p>
-            <p>Terrain: ${hexData.terrain.charAt(0).toUpperCase() + hexData.terrain.slice(1)}</p>
-            <p class="success">✓ Valid starting location</p>
-        </div>
-    `;
-}
-
-async function createFaction() {
-    const factionName = document.getElementById('faction-name').value.trim();
-    const heroName = document.getElementById('hero-name').value.trim();
+    const playerName = document.getElementById('player-name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
     const startingType = document.getElementById('starting-type').value;
     const startingElement = document.getElementById('starting-element').value;
     
-    if (!selectedLocation) {
-        alert('Please select a starting location');
+    if (password !== confirmPassword) {
+        alert('Passwords do not match!');
         return;
     }
     
-    const createBtn = document.getElementById('create-faction-btn');
-    const statusDiv = document.getElementById('creation-status');
+    const registerBtn = document.getElementById('register-btn');
+    const statusDiv = document.getElementById('registration-status');
     
-    createBtn.disabled = true;
-    createBtn.textContent = 'Creating Faction...';
+    registerBtn.disabled = true;
+    registerBtn.textContent = 'Registering...';
     statusDiv.classList.remove('hidden');
-    statusDiv.textContent = 'Building your empire...';
+    statusDiv.textContent = 'Creating your player account...';
     statusDiv.className = 'status-message info';
     
     try {
-        const response = await fetch('/api/create-faction', {
+        const response = await fetch('/api/register-player', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                faction_name: factionName,
-                hero_name: heroName,
+                player_name: playerName,
+                email: email,
+                password: password,
                 starting_type: startingType,
-                starting_element: startingElement || null,
-                starting_location: selectedLocation
+                starting_element: startingElement || null
             })
         });
         
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to create faction');
+            throw new Error(errorData.error || 'Failed to register');
         }
         
         const result = await response.json();
-        console.log('Faction created:', result);
+        console.log('Player registered:', result);
         
-        statusDiv.textContent = `Faction created successfully! Faction ID: ${result.faction_id}`;
+        statusDiv.innerHTML = `
+            <strong>✅ Registration Complete!</strong><br><br>
+            Your player account has been created.<br>
+            You will receive your first turn report when the next turn processes.<br><br>
+            <strong>Next Turn:</strong> ${result.next_turn_date || 'To be announced'}<br><br>
+            Check your email or log in to view your report.
+        `;
         statusDiv.className = 'status-message success';
         
         setTimeout(() => {
             window.location.href = '/';
-        }, 2000);
+        }, 5000);
         
     } catch (error) {
-        console.error('Error creating faction:', error);
+        console.error('Error registering player:', error);
         statusDiv.textContent = `Error: ${error.message}`;
         statusDiv.className = 'status-message error';
-        createBtn.disabled = false;
-        createBtn.textContent = 'Create Faction';
+        registerBtn.disabled = false;
+        registerBtn.textContent = 'Register Player';
     }
 }
