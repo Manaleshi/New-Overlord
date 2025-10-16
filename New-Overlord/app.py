@@ -926,13 +926,13 @@ def register_player():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/debug/factions')
-    def debug_factions():
+def debug_factions():
     """Debug endpoint to view all factions"""
-        factions = get_current_factions()
-        if factions:
-            return jsonify(factions)
-        else:
-            return jsonify({'error': 'No factions file found'}), 404
+    factions = get_current_factions()
+    if factions:
+        return jsonify(factions)
+    else:
+        return jsonify({'error': 'No factions file found'}), 404
 
 def get_terrain_resources(terrain):
     resource_map = {
@@ -993,6 +993,7 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
