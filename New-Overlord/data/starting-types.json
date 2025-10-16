@@ -1,0 +1,83 @@
+{
+  "starting_types": {
+    "general": {
+      "name": "General",
+      "description": "A military leader skilled in combat and warfare. Best for building armies and conquering territory.",
+      "starting_skills": {
+        "combat": {"level": 1, "days": 30},
+        "blades": {"level": 1, "days": 30}
+      },
+      "starting_items": {
+        "sword": 1,
+        "plate_armor": 1,
+        "horse": 1
+      },
+      "starting_equipped": ["sword", "plate_armor", "horse"],
+      "funds_bonus": 0,
+      "flavor_text": "You begin your conquest with martial training and heavy armor. Your sword arm is strong and your tactics sound."
+    },
+    "mage": {
+      "name": "Mage",
+      "description": "A wielder of arcane powers. Masters one elemental school of magic. Best for magical dominance and enchantments.",
+      "starting_skills": {
+        "magecraft": {"level": 1, "days": 30}
+      },
+      "starting_items": {
+        "staff": 1,
+        "robes": 1,
+        "horse": 1,
+        "herbs": 10
+      },
+      "starting_equipped": ["staff", "robes", "horse"],
+      "funds_bonus": 0,
+      "flavor_text": "You begin your journey with mystical knowledge and the power to bend reality. Magic flows through your veins."
+    },
+    "adventurer": {
+      "name": "Adventurer",
+      "description": "An explorer skilled in scouting and survival. Best for discovering new lands and navigating difficult terrain.",
+      "starting_skills": {
+        "scouting": {"level": 1, "days": 15},
+        "observation": {"level": 1, "days": 30}
+      },
+      "starting_items": {
+        "horse": 1,
+        "food": 30,
+        "tent": 1
+      },
+      "starting_equipped": ["horse"],
+      "funds_bonus": 0,
+      "flavor_text": "You begin as a wanderer with keen eyes and survival instincts. The wild holds no secrets from you."
+    },
+    "craftsman": {
+      "name": "Craftsman",
+      "description": "A skilled artisan with knowledge of two crafts. Best for economic development and production.",
+      "starting_skills": {
+        "artisan": {"level": 1, "days": 15},
+        "building": {"level": 1, "days": 15}
+      },
+      "starting_items": {
+        "horse": 1,
+        "tool": 2,
+        "iron": 5,
+        "wood": 10
+      },
+      "starting_equipped": ["horse", "tool"],
+      "funds_bonus": 0,
+      "flavor_text": "You begin with skilled hands and knowledge of craft. You can build an empire from raw materials."
+    }
+  },
+  "starting_defaults": {
+    "base_funds": 5000,
+    "follower_count": 50,
+    "control_points_base": 200
+  }
+}
+```
+
+**Commit message:**
+```
+Add starting types data for faction creation
+
+- Define 4 starting types: General, Mage, Adventurer, Craftsman
+- Each type has unique skills, items, and flavor text
+- Set default funds and follower counts
