@@ -818,6 +818,32 @@ def get_game_status_endpoint():
     status = get_game_status()
     return jsonify(status)
 
+@app.route('/faction-setup')
+def faction_setup():
+    """Faction setup page"""
+    # Check if game is ready
+    if not is_game_ready():
+        return redirect('/')
+    return render_template('faction-setup.html')
+
+@app.route('/api/starting-types')
+def get_starting_types():
+    """Get starting type definitions"""
+    try:
+        with open('data/starting-types.json', 'r') as f:
+            return jsonify(json.load(f))
+    except FileNotFoundError:
+        return jsonify({'error': 'Starting types not found'}), 404
+
+@app.route('/api/current-world')
+def get_current_world_endpoint():
+    """Get current active world"""
+    world = get_current_world()
+    if world:
+        return jsonify(world)
+    else:
+        return jsonify({'error': 'No active world'}), 404
+
 def get_terrain_resources(terrain):
     resource_map = {
         'plains': ['grain', 'horses'],
@@ -877,6 +903,7 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
