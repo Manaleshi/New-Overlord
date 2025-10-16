@@ -3,45 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Overlord - Faction Setup</title>
+    <title>New Overlord - Player Registration</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🏰 New Overlord - Faction Setup</h1>
-            <p class="subtitle">Begin your conquest of the realm</p>
+            <h1>🏰 New Overlord - Player Registration</h1>
+            <p class="subtitle">Register to join the game</p>
             <a href="/" style="color: white; text-decoration: underline;">← Return to Home</a>
         </header>
 
-        <div class="setup-container">
-            <!-- Left side: Hex Map -->
-            <div class="map-section">
-                <h2>Choose Your Starting Location</h2>
-                <p class="instruction">Click a settlement (🏠 village, 🏘️ town, or 🏙️ city) to begin your faction there.</p>
+        <div class="registration-container">
+            <div class="registration-form">
+                <h2>Create Your Player Account</h2>
+                <p class="info-text">Complete this form to register for the game. You will be assigned a starting location by the GM.</p>
                 
-                <div id="hex-grid" class="hex-grid"></div>
-                
-                <div id="location-info" class="location-panel">
-                    <p class="hint">Select a settlement to see details...</p>
-                </div>
-            </div>
-
-            <!-- Right side: Faction Setup Form -->
-            <div class="form-section">
-                <div id="setup-form-container" class="setup-form hidden">
-                    <h2>Create Your Faction</h2>
-                    
+                <form id="registration-form">
                     <div class="form-group">
-                        <label for="faction-name">Faction Name:</label>
-                        <input type="text" id="faction-name" placeholder="The Northern Alliance" maxlength="50" required>
-                        <small>This is your empire's name</small>
+                        <label for="player-name">Your Name:</label>
+                        <input type="text" id="player-name" placeholder="John Smith" maxlength="50" required>
+                        <small>Your real name (not your character name)</small>
                     </div>
 
                     <div class="form-group">
-                        <label for="hero-name">Hero Name:</label>
-                        <input type="text" id="hero-name" placeholder="Lord Blackwood" maxlength="50" required>
-                        <small>Your starting leader's name</small>
+                        <label for="email">Email Address:</label>
+                        <input type="email" id="email" placeholder="you@example.com" required>
+                        <small>Used for turn reports and notifications</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" placeholder="Enter password" minlength="6" required>
+                        <small>Minimum 6 characters</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirm-password">Confirm Password:</label>
+                        <input type="password" id="confirm-password" placeholder="Re-enter password" required>
                     </div>
 
                     <div class="form-group">
@@ -62,7 +61,6 @@
                         <p class="flavor-text" id="type-flavor"></p>
                     </div>
 
-                    <!-- Mage element choice (hidden by default) -->
                     <div id="element-choice" class="form-group hidden">
                         <label for="starting-element">Choose Your Element:</label>
                         <select id="starting-element">
@@ -74,30 +72,23 @@
                         </select>
                     </div>
 
-                    <div class="starting-package">
-                        <h4>Starting Package:</h4>
+                    <div class="game-info">
+                        <h4>What Happens Next:</h4>
                         <ul>
-                            <li>1 Hero unit (you)</li>
-                            <li>50 Followers (unskilled troops)</li>
-                            <li>$5,000 faction funds</li>
-                            <li>1 Horse (equipped)</li>
-                            <li>Type-specific skills and equipment</li>
+                            <li>GM assigns your starting location</li>
+                            <li>You receive your first turn report</li>
+                            <li>Submit orders including your faction and hero names</li>
                         </ul>
                     </div>
 
-                    <button id="create-faction-btn" class="btn-primary" disabled>Create Faction</button>
+                    <button type="submit" id="register-btn" class="btn-primary">Register Player</button>
                     
-                    <div id="creation-status" class="status-message hidden"></div>
-                </div>
-
-                <div id="no-location-msg" class="info-message">
-                    <p>👈 Select a settlement on the map to begin</p>
-                </div>
+                    <div id="registration-status" class="status-message hidden"></div>
+                </form>
             </div>
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/hex-map.js') }}"></script>
     <script src="{{ url_for('static', filename='js/faction-setup.js') }}"></script>
 </body>
 </html>
