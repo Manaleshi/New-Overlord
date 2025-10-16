@@ -22,6 +22,8 @@ class HexMap {
         // Edit mode state
         this.editMode = false;
         this.editTerrain = null;
+        this.selectionMode = null;  // ADD THIS LINE
+        this.onSelectionCallback = null;  // ADD THIS LINE
     }
     
     calculateHexPosition(x, y) {
@@ -509,10 +511,24 @@ clearSelection() {
             return qty ? `${qty} ${resource}` : resource;
         }).join(', ');
     }
-}
 
-// Initialize hex map when page loads
+    setSelectionMode(mode) {  // ← ADD THIS METHOD
+        this.selectionMode = mode;
+        this.editMode = false;
+        
+        if (mode) {
+            this.container.style.cursor = 'pointer';
+            console.log(`Selection mode enabled: ${mode}`);
+        } else {
+            this.container.style.cursor = 'default';
+            console.log('Selection mode disabled');
+        }
+    }
+    
+}// Initialize hex map when page loads
 document.addEventListener('DOMContentLoaded', function() {
     window.hexMap = new HexMap('hex-grid');
     console.log('HexMap initialized');
 });
+
+
