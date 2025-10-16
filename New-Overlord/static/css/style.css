@@ -578,63 +578,26 @@ footer {
     cursor: not-allowed;
 }
 
-/* ========== FACTION SETUP STYLES ========== */
+/* ========== PLAYER REGISTRATION STYLES ========== */
 
-.setup-container {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 2rem;
-    margin-top: 2rem;
-}
-
-.map-section {
-    background: #f5f5f5;
-    padding: 1.5rem;
-    border-radius: 8px;
-}
-
-.form-section {
+.registration-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
     background: white;
-    padding: 1.5rem;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.instruction {
+.registration-form h2 {
+    margin-top: 0;
+    color: #333;
+}
+
+.info-text {
     color: #666;
+    margin-bottom: 2rem;
     font-style: italic;
-    margin-bottom: 1rem;
-}
-
-.location-panel {
-    background: white;
-    padding: 1rem;
-    margin-top: 1rem;
-    border-radius: 4px;
-    border: 2px solid #ddd;
-}
-
-.location-panel .hint {
-    color: #999;
-    text-align: center;
-    font-style: italic;
-}
-
-.location-details p {
-    margin: 0.5rem 0;
-}
-
-.location-details .success {
-    color: #28a745;
-    font-weight: bold;
-}
-
-.setup-form {
-    max-width: 500px;
-}
-
-.setup-form.hidden {
-    display: none;
 }
 
 .form-group {
@@ -655,6 +618,7 @@ footer {
     border: 2px solid #ddd;
     border-radius: 4px;
     font-size: 1rem;
+    box-sizing: border-box;
 }
 
 .form-group input:focus,
@@ -700,19 +664,19 @@ footer {
     border-top: 1px solid #ddd;
 }
 
-.starting-package {
+.game-info {
     background: #e8f5e9;
     padding: 1rem;
     border-radius: 4px;
     margin: 1.5rem 0;
 }
 
-.starting-package h4 {
+.game-info h4 {
     margin-top: 0;
     color: #2e7d32;
 }
 
-.starting-package ul {
+.game-info ul {
     margin: 0.5rem 0;
     padding-left: 1.5rem;
 }
@@ -768,51 +732,9 @@ footer {
     border: 1px solid #c62828;
 }
 
-.info-message {
-    text-align: center;
-    color: #666;
-    padding: 2rem;
-}
-
-.info-message p {
-    font-size: 1.2rem;
-}
-
-.hex.selectable {
-    cursor: pointer;
-}
-
-.hex.selectable:hover {
-    transform: scale(1.1);
-    z-index: 100;
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
-}
-
-.hex.not-selectable {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.hex.not-selectable:hover {
-    opacity: 0.7;
-}
-
-.hex.selected {
-    border: 3px solid #4CAF50 !important;
-    box-shadow: 0 0 15px rgba(76, 175, 80, 0.8);
-    z-index: 99;
-}
-
-@media (max-width: 1024px) {
-    .setup-container {
-        grid-template-columns: 1fr;
-    }
-    
-    .map-section {
-        order: 2;
-    }
-    
-    .form-section {
-        order: 1;
+@media (max-width: 768px) {
+    .registration-container {
+        margin: 1rem;
+        padding: 1rem;
     }
 }
