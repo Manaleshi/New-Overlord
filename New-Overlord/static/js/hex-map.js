@@ -138,23 +138,40 @@ class HexMap {
     }
     
     async selectHex(x, y) {
-        // Remove previous selection
-        const prevSelected = this.container.querySelector('.hex.selected');
-        if (prevSelected) {
-            prevSelected.classList.remove('selected');
+    const hexData = this.worldData.hexes[`${x},${y}`];
+    
+    // If in selection mode, validate selection
+    if (this.selectionMode) {
+        if (this.selectionMode === 'settlement' && !hexData.population_center) {
+            // Settlement required but not present
+            return; // Don't select, faction-setup.js will show alert
         }
         
-        // Add selection to new hex
-        const hexElement = this.container.querySelector(`[data-x="${x}"][data-y="${y}"]`);
-        if (hexElement) {
-            hexElement.classList.add('selected');
+        // Valid selection - call callback if exists
+        if (window.onHexSelected) {
+            window.onHexSelected(x, y);
         }
-        
-        this.selectedHex = { x, y };
-        
-        // Load and display hex details
+    }
+    
+    // Remove previous selection
+    const prevSelected = this.container.querySelector('.hex.selected');
+    if (prevSelected) {
+        prevSelected.classList.remove('selected');
+    }
+    
+    // Add selection to new hex
+    const hexElement = this.container.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+    if (hexElement) {
+        hexElement.classList.add('selected');
+    }
+    
+    this.selectedHex = { x, y };
+    
+    // Only display full details if NOT in selection mode
+    if (!this.selectionMode) {
         await this.displayHexDetails(x, y);
     }
+}
     
     async displayHexDetails(x, y) {
         const hexData = this.worldData.hexes[`${x},${y}`];
