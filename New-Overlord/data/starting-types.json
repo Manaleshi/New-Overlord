@@ -72,12 +72,3 @@
     "control_points_base": 200
   }
 }
-```
-
-**Commit message:**
-```
-Add starting types data for faction creation
-
-- Define 4 starting types: General, Mage, Adventurer, Craftsman
-- Each type has unique skills, items, and flavor text
-- Set default funds and follower counts
