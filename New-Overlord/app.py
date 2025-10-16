@@ -89,6 +89,36 @@ def is_world_locked():
     status = get_game_status()
     return status.get('world_locked', False)
 
+# ========== FACTION & GAME ABSTRACTION LAYER ==========
+
+def get_current_factions():
+    """Load factions from factions/active-factions.json"""
+    try:
+        with open('factions/active-factions.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
+
+def set_current_factions(factions_data):
+    """Save factions to factions/active-factions.json"""
+    os.makedirs('factions', exist_ok=True)
+    with open('factions/active-factions.json', 'w') as f:
+        json.dump(factions_data, f, indent=2)
+
+def get_current_game():
+    """Load game state from games/active-game.json"""
+    try:
+        with open('games/active-game.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
+
+def set_current_game(game_data):
+    """Save game state to games/active-game.json"""
+    os.makedirs('games', exist_ok=True)
+    with open('games/active-game.json', 'w') as f:
+        json.dump(game_data, f, indent=2)
+
 
 # ========== EXISTING CLASSES ==========
 
@@ -847,6 +877,7 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
