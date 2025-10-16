@@ -844,6 +844,163 @@ def get_current_world_endpoint():
     else:
         return jsonify({'error': 'No active world'}), 404
 
+@app.route('/api/create-faction', methods=['POST'])
+def create_faction():
+    """Create a new faction with starting units"""
+    try:
+        data = request.get_json()
+        
+        # Extract form data
+        faction_name = data.get('faction_name')
+        hero_name = data.get('hero_name')
+        starting_type = data.get('starting_type')
+        starting_element = data.get('starting_element')
+        starting_location = data.get('starting_location')
+        
+        # Validate required fields
+        if not all([faction_name, hero_name, starting_type, starting_location]):
+            return jsonify({'error': 'Missing required fields'}), 400
+        
+        # Load starting type data
+        with open('data/starting-types.json', 'r') as f:
+            starting_types_data = json.load(f)
+        
+        type_config = starting_types_data['starting_types'].get(starting_type)
+        if not type_config:
+            return jsonify({'error': 'Invalid starting type'}), 400
+        
+        defaults = starting_types_data['starting_defaults']
+        
+        # Load or initialize factions
+        factions = get_current_factions()
+        if not factions:
+            factions = {"factions": {}, "faction_counter": 0}
+        
+        # Load or initialize game
+        game = get_current_game()
+        if not game:
+            return jsonify({'error': 'Game not initialized'}), 400
+        
+        # Generate faction ID
+        faction_id = f"f{factions['faction_counter']:02d}"
+        factions['faction_counter'] += 1
+        
+        # Create faction
+        factions['factions'][faction_id] = {
+            "name": faction_name,
+            "player_email": None,
+            "funds": defaults['base_funds'] + type_config.get('funds_bonus', 0),
+            "control_points": {
+                "total": defaults['control_points_base'],
+                "used": 2
+            },
+            "stances": {
+                "default": "neutral"
+            },
+            "settings": {
+                "advertise": True,
+                "share": True,
+                "terse_battles": False
+            },
+            "titles": [],
+            "created_turn": game['game_metadata']['turn_number'],
+            "starting_type": starting_type
+        }
+        
+        # Create hero unit
+        hero_id = f"U{game['unit_counter']:03d}"
+        game['unit_counter'] += 1
+        
+        # Build hero skills
+        hero_skills = dict(type_config['starting_skills'])
+        
+        # Add elemental skill for mages
+        if starting_type == 'mage' and starting_element:
+            hero_skills[f"{starting_element}_magics"] = {"level": 1, "days": 30}
+        
+        # Add terrain lore for adventurers
+        if starting_type == 'adventurer':
+            terrain = starting_location['terrain']
+            terrain_lore = f"{terrain}walk"
+            hero_skills[terrain_lore] = {"level": 1, "days": 15}
+        
+        game['units'][hero_id] = {
+            "name": hero_name,
+            "type": "hero",
+            "faction": faction_id,
+            "location": starting_location['location_id'],
+            "arrival_day": 1,
+            "in_structure": None,
+            "skills": hero_skills,
+            "items": dict(type_config['starting_items']),
+            "equipped": list(type_config['starting_equipped']),
+            "stats": {
+                "initiative": 2,
+                "melee": 1,
+                "defense": 1,
+                "damage": 1,
+                "life": 4,
+                "observation": 1
+            },
+            "upkeep": 20
+        }
+        
+        # Create follower unit (50 men)
+        follower_id = f"U{game['unit_counter']:03d}"
+        game['unit_counter'] += 1
+        
+        game['units'][follower_id] = {
+            "name": f"{faction_name} Troops",
+            "type": "followers",
+            "faction": faction_id,
+            "location": starting_location['location_id'],
+            "arrival_day": 1,
+            "in_structure": None,
+            "count": defaults['follower_count'],
+            "skills": {},
+            "items": {},
+            "equipped": [],
+            "upkeep": defaults['follower_count'] * 10
+        }
+        
+        # Update indices
+        location_id = starting_location['location_id']
+        
+        if location_id not in game['location_index']:
+            game['location_index'][location_id] = {
+                "outdoor_units": [],
+                "structures": {}
+            }
+        
+        game['location_index'][location_id]['outdoor_units'].extend([hero_id, follower_id])
+        game['faction_index'][faction_id] = [hero_id, follower_id]
+        
+        # Initialize empty pending orders
+        game['pending_orders'][hero_id] = []
+        game['pending_orders'][follower_id] = []
+        
+        # Save everything
+        set_current_factions(factions)
+        set_current_game(game)
+        
+        print(f"Faction created: {faction_id} - {faction_name}")
+        print(f"Hero: {hero_id} - {hero_name}")
+        print(f"Followers: {follower_id}")
+        
+        return jsonify({
+            'status': 'success',
+            'faction_id': faction_id,
+            'hero_id': hero_id,
+            'follower_id': follower_id,
+            'starting_location': location_id
+        })
+        
+    except Exception as e:
+        print(f"Error creating faction: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
 def get_terrain_resources(terrain):
     resource_map = {
         'plains': ['grain', 'horses'],
@@ -903,6 +1060,7 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
