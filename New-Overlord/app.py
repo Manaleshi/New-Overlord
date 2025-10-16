@@ -907,8 +907,11 @@ def register_player():
         # Save factions
         set_current_factions(factions)
         
-        # Get next turn date from game status
+        # Update game status with faction count
         game_status = get_game_status()
+        game_status['factions_count'] = len(factions['factions'])
+        set_game_status(game_status)
+        
         next_turn = game_status.get('next_turn_date', 'To be announced')
         
         print(f"Player registered: {faction_id} - {player_name} ({email})")
@@ -993,6 +996,7 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
