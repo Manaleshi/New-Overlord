@@ -937,6 +937,70 @@ def debug_factions():
     else:
         return jsonify({'error': 'No factions file found'}), 404
 
+@app.route('/gm-admin')
+def gm_admin():
+    """GM admin page"""
+    # Check if game is ready
+    if not is_game_ready():
+        return redirect('/')
+    return render_template('gm-admin.html')
+
+@app.route('/api/current-factions')
+def get_current_factions_endpoint():
+    """Get all factions data"""
+    factions = get_current_factions()
+    if factions:
+        return jsonify(factions)
+    else:
+        return jsonify({'factions': {}})
+
+@app.route('/api/assign-player-location', methods=['POST'])
+def assign_player_location():
+    """Assign a player to a starting location"""
+    try:
+        data = request.get_json()
+        faction_id = data.get('faction_id')
+        location_id = data.get('location_id')
+        coordinates = data.get('coordinates')
+        
+        # Load factions
+        factions = get_current_factions()
+        if not factions or faction_id not in factions['factions']:
+            return jsonify({'error': 'Faction not found'}), 404
+        
+        faction = factions['factions'][faction_id]
+        
+        # Check if already assigned
+        if faction['status'] != 'pending_assignment':
+            return jsonify({'error': 'Faction already assigned'}), 400
+        
+        # Update faction
+        faction['status'] = 'active'
+        faction['assigned_location'] = location_id
+        faction['starting_coordinates'] = coordinates
+        faction['funds'] = 5000  # Outlands starting funds
+        faction['control_points'] = 0
+        faction['assigned_at'] = datetime.now().isoformat()
+        
+        # Save factions
+        set_current_factions(factions)
+        
+        # Update game status with faction count
+        game_status = get_game_status()
+        active_count = sum(1 for f in factions['factions'].values() if f['status'] == 'active')
+        game_status['factions_count'] = active_count
+        set_game_status(game_status)
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Player assigned to {location_id}',
+            'faction': faction
+        })
+        
+    except Exception as e:
+        print(f"Error assigning player: {e}")
+        return jsonify({'error': str(e)}), 500
+
 def get_terrain_resources(terrain):
     resource_map = {
         'plains': ['grain', 'horses'],
@@ -996,6 +1060,7 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
