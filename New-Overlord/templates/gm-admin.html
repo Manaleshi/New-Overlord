@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GM Admin - New Overlord</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .gm-container {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        
+        .pending-players {
+            width: 350px;
+            flex-shrink: 0;
+        }
+        
+        .player-card {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .player-card:hover {
+            border-color: #4CAF50;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .player-card.selected {
+            border-color: #4CAF50;
+            background: #e8f5e9;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+        
+        .player-card.assigned {
+            border-color: #2196F3;
+            background: #e3f2fd;
+            opacity: 0.7;
+        }
+        
+        .player-name {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .player-info {
+            font-size: 14px;
+            color: #666;
+            margin: 4px 0;
+        }
+        
+        .player-type {
+            display: inline-block;
+            background: #ff9800;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .map-container {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .status-bar {
+            background: #2196F3;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .instruction {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        
+        .section-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 8px;
+        }
+        
+        .assigned-location {
+            color: #2196F3;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .home-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .home-link:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="home-link">← Home</a>
+    
+    <div class="status-bar">
+        <h1>🎮 Game Master Admin Panel</h1>
+        <p>Assign starting locations to pending players</p>
+    </div>
+    
+    <div class="gm-container">
+        <!-- Left Panel: Pending Players -->
+        <div class="pending-players">
+            <div class="section-header">Pending Players</div>
+            <div class="instruction">
+                <strong>Instructions:</strong><br>
+                1. Click a player card<br>
+                2. Click a hex on the map<br>
+                3. Player will be assigned to that location
+            </div>
+            <div id="players-list">
+                <!-- Players will be loaded here -->
+            </div>
+            
+            <div class="section-header" style="margin-top: 30px;">Assigned Players</div>
+            <div id="assigned-list">
+                <!-- Assigned players will show here -->
+            </div>
+        </div>
+        
+        <!-- Right Panel: World Map -->
+        <div class="map-container">
+            <div class="section-header">World Map</div>
+            <div id="selected-player-indicator" style="display: none; background: #e8f5e9; padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 2px solid #4CAF50;">
+                <strong>Selected Player:</strong> <span id="selected-player-name"></span><br>
+                <small>Click a hex on the map to assign this player</small>
+            </div>
+            <div id="hex-map"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/hex-map.js') }}"></script>
+    <script>
+        let selectedPlayer = null;
+        let pendingPlayers = [];
+        let assignedPlayers = [];
+        let factions = {};
+        let hexMap = null;
+        
+        // Load factions and initialize
+        async function initialize() {
+            try {
+                // Load factions
+                const factionsResponse = await fetch('/api/current-factions');
+                const factionsData = await factionsResponse.json();
+                factions = factionsData.factions || {};
+                
+                // Separate pending and assigned
+                pendingPlayers = [];
+                assignedPlayers = [];
+                
+                for (const [factionId, faction] of Object.entries(factions)) {
+                    if (faction.status === 'pending_assignment') {
+                        pendingPlayers.push(faction);
+                    } else if (faction.status === 'active') {
+                        assignedPlayers.push(faction);
+                    }
+                }
+                
+                // Display players
+                displayPlayers();
+                
+                // Load and display map
+                const worldResponse = await fetch('/api/current-world');
+                const worldData = await worldResponse.json();
+                
+                hexMap = new HexMap('hex-map', worldData);
+                hexMap.onHexClick = handleHexClick;
+                hexMap.render();
+                
+            } catch (error) {
+                console.error('Error initializing:', error);
+                alert('Error loading game data');
+            }
+        }
+        
+        function displayPlayers() {
+            const pendingList = document.getElementById('players-list');
+            const assignedList = document.getElementById('assigned-list');
+            
+            // Display pending players
+            if (pendingPlayers.length === 0) {
+                pendingList.innerHTML = '<p style="color: #999; padding: 15px;">No pending players</p>';
+            } else {
+                pendingList.innerHTML = pendingPlayers.map(player => `
+                    <div class="player-card" data-faction-id="${player.faction_id}" onclick="selectPlayer('${player.faction_id}')">
+                        <div class="player-name">${player.player_name}</div>
+                        <div class="player-info">📧 ${player.player_email}</div>
+                        <div class="player-info">
+                            <span class="player-type">${player.starting_type}</span>
+                            ${player.starting_element ? `<span class="player-type" style="background: #9c27b0;">${player.starting_element}</span>` : ''}
+                        </div>
+                        <div class="player-info" style="font-size: 12px; color: #999;">ID: ${player.faction_id}</div>
+                    </div>
+                `).join('');
+            }
+            
+            // Display assigned players
+            if (assignedPlayers.length === 0) {
+                assignedList.innerHTML = '<p style="color: #999; padding: 15px;">No assigned players yet</p>';
+            } else {
+                assignedList.innerHTML = assignedPlayers.map(player => `
+                    <div class="player-card assigned">
+                        <div class="player-name">${player.player_name}</div>
+                        <div class="player-info">
+                            <span class="player-type">${player.starting_type}</span>
+                        </div>
+                        <div class="assigned-location">📍 ${player.assigned_location}</div>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        function selectPlayer(factionId) {
+            selectedPlayer = factionId;
+            
+            // Update UI to show selected player
+            document.querySelectorAll('.player-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`[data-faction-id="${factionId}"]`).classList.add('selected');
+            
+            // Show indicator
+            const player = pendingPlayers.find(p => p.faction_id === factionId);
+            document.getElementById('selected-player-indicator').style.display = 'block';
+            document.getElementById('selected-player-name').textContent = player.player_name;
+        }
+        
+        async function handleHexClick(x, y) {
+            if (!selectedPlayer) {
+                alert('Please select a player first');
+                return;
+            }
+            
+            const locationId = hexMap.world.hexes[`${x},${y}`].location_id;
+            
+            // Confirm assignment
+            const player = pendingPlayers.find(p => p.faction_id === selectedPlayer);
+            const confirm = window.confirm(
+                `Assign ${player.player_name} to location ${locationId} at (${x}, ${y})?`
+            );
+            
+            if (!confirm) return;
+            
+            try {
+                const response = await fetch('/api/assign-player-location', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        faction_id: selectedPlayer,
+                        location_id: locationId,
+                        coordinates: { x, y }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(`Successfully assigned ${player.player_name} to ${locationId}!`);
+                    selectedPlayer = null;
+                    document.getElementById('selected-player-indicator').style.display = 'none';
+                    await initialize(); // Reload everything
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+                
+            } catch (error) {
+                console.error('Error assigning player:', error);
+                alert('Error assigning player');
+            }
+        }
+        
+        // Initialize on page load
+        initialize();
+    </script>
+</body>
+</html>
