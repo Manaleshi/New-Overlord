@@ -114,6 +114,12 @@
                 <p>View current game state, active factions, and game statistics.</p>
                 <a href="/game-status" class="btn btn-secondary">View Status</a>
             </div>
+            <div class="card" id="gm-admin-card" style="display: none;">
+                <div class="card-icon">🎮</div>
+                <h2>GM Admin Panel</h2>
+                <p>Assign starting locations to pending players and manage the game.</p>
+                <a href="/gm-admin" class="btn btn-secondary">GM Admin</a>
+            </div>
         </div>
 
         <div style="margin-top: 3rem; padding: 2rem; background: #f9f9f9; border-radius: 8px;">
@@ -146,7 +152,11 @@
                     message.style.cssText = 'color: #ff9800; font-weight: bold; margin-top: 1rem;';
                     message.textContent = '⏳ Game is being prepared by the GM...';
                     factionCard.appendChild(message);
+                } else {
+                    // Game is ready - show GM admin card
+                    document.getElementById('gm-admin-card').style.display = 'block';
                 }
+                
             } catch (error) {
                 console.error('Error checking game status:', error);
             }
@@ -157,4 +167,5 @@
     </script>
 </body>
 </html>
+
 
