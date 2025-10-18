@@ -101,7 +101,11 @@ class HexMap {
         hexElement.addEventListener('click', (e) => {
             if (this.editMode) {
                 this.handleTerrainEdit(e);
+            } else if (this.onHexClick) {
+                // Custom click handler (for GM admin)
+                this.onHexClick(x, y);
             } else {
+                // Default behavior
                 this.selectHex(x, y);
             }
         });
