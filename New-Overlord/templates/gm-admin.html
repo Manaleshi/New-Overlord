@@ -203,7 +203,8 @@
                 const worldResponse = await fetch('/api/current-world');
                 const worldData = await worldResponse.json();
                 
-                hexMap = new HexMap('hex-map', worldData);
+                hexMap = new HexMap('hex-map');
+                hexMap.loadWorld(worldData);
                 hexMap.onHexClick = handleHexClick;
                 hexMap.render();
                 
