@@ -272,7 +272,7 @@
                 return;
             }
             
-            const locationId = hexMap.world.hexes[`${x},${y}`].location_id;
+            const locationId = hexMap.worldData.hexes[`${x},${y}`].location_id;
             
             // Confirm assignment
             const player = pendingPlayers.find(p => p.faction_id === selectedPlayer);
