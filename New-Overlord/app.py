@@ -1051,6 +1051,11 @@ def import_game_data():
         print(f"Error importing game data: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/data-manager')
+def data_manager():
+    """Data import/export management page"""
+    return render_template('data-manager.html')
+
 def get_terrain_resources(terrain):
     resource_map = {
         'plains': ['grain', 'horses'],
@@ -1110,6 +1115,7 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
