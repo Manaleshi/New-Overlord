@@ -1001,6 +1001,56 @@ def assign_player_location():
         print(f"Error assigning player: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/export-game-data')
+def export_game_data():
+    """Export all game data as a single downloadable file"""
+    try:
+        game_data = {
+            'world': get_current_world(),
+            'factions': get_current_factions(),
+            'game': get_current_game(),
+            'game_status': get_game_status(),
+            'exported_at': datetime.now().isoformat()
+        }
+        
+        return jsonify(game_data)
+    except Exception as e:
+        print(f"Error exporting game data: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/import-game-data', methods=['POST'])
+def import_game_data():
+    """Import game data from uploaded file"""
+    try:
+        data = request.get_json()
+        
+        # Validate the data structure
+        if not all(key in data for key in ['world', 'factions', 'game_status']):
+            return jsonify({'error': 'Invalid game data file'}), 400
+        
+        # Save each component
+        if data.get('world'):
+            set_current_world(data['world'])
+        
+        if data.get('factions'):
+            set_current_factions(data['factions'])
+        
+        if data.get('game'):
+            set_current_game(data['game'])
+        
+        if data.get('game_status'):
+            set_game_status(data['game_status'])
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Game data imported successfully',
+            'imported_at': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"Error importing game data: {e}")
+        return jsonify({'error': str(e)}), 500
+
 def get_terrain_resources(terrain):
     resource_map = {
         'plains': ['grain', 'horses'],
@@ -1060,6 +1110,7 @@ def generate_resource_quantities(terrain):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
