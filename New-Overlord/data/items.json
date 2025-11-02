@@ -1,0 +1,366 @@
+{
+  "items": {
+    "coin": {
+      "name": "Coin",
+      "tag": "coin",
+      "category": "currency",
+      "weight": 0,
+      "description": "The monetary unit."
+    },
+    
+    "horse": {
+      "name": "Horse",
+      "tag": "hrse",
+      "category": "mount",
+      "weight": 100,
+      "capacity": {
+        "walking": 120,
+        "riding": 95,
+        "equipped_riding": 200
+      },
+      "equipment": {
+        "category": "mount",
+        "limit_per_figure": 1,
+        "required_skill": null,
+        "effects": {
+          "initiative": 3,
+          "melee": -1,
+          "defense": -1
+        }
+      },
+      "description": "The basic mount, suited for fast riding, and light pack duty."
+    },
+    
+    "sword": {
+      "name": "Sword",
+      "tag": "swrd",
+      "category": "weapon",
+      "weight": 4,
+      "equipment": {
+        "category": "weapon",
+        "limit_per_figure": 1,
+        "required_skill": {"skill": "blades", "level": 1},
+        "effects": {
+          "melee": 3,
+          "defense": 2,
+          "damage": 2
+        }
+      },
+      "description": "The basic edged weapon for infantry."
+    },
+    
+    "plate_armor": {
+      "name": "Plate Armor",
+      "tag": "plat",
+      "category": "armor",
+      "weight": 15,
+      "equipment": {
+        "category": "armor",
+        "limit_per_figure": 1,
+        "required_skill": {"skill": "combat", "level": 0},
+        "effects": {
+          "defense": 3,
+          "initiative": -3
+        }
+      },
+      "description": "A heavy-duty protection for knights and high-level combat units."
+    },
+    
+    "leather_jerkin": {
+      "name": "Leather Jerkin",
+      "tag": "leat",
+      "category": "armor",
+      "weight": 5,
+      "equipment": {
+        "category": "armor",
+        "limit_per_figure": 1,
+        "required_skill": {"skill": "combat", "level": 0},
+        "effects": {
+          "defense": 1
+        }
+      },
+      "description": "The basic protection for troops."
+    },
+    
+    "battle_axe": {
+      "name": "Battle Axe",
+      "tag": "baxe",
+      "category": "weapon",
+      "weight": 7,
+      "equipment": {
+        "category": "weapon",
+        "limit_per_figure": 1,
+        "required_skill": {"skill": "blades", "level": 1},
+        "effects": {
+          "melee": 3,
+          "defense": 1,
+          "damage": 3
+        }
+      },
+      "description": "The weapons for aggressive fighting."
+    },
+    
+    "war_hammer": {
+      "name": "War Hammer",
+      "tag": "wham",
+      "category": "weapon",
+      "weight": 10,
+      "equipment": {
+        "category": "weapon",
+        "limit_per_figure": 1,
+        "required_skill": {"skill": "melee", "level": 1},
+        "effects": {
+          "melee": 4,
+          "damage": 4
+        }
+      },
+      "description": "The blunt weapons for straight one-on-one massacre."
+    },
+    
+    "longbow": {
+      "name": "Longbow",
+      "tag": "lbow",
+      "category": "weapon",
+      "weight": 5,
+      "equipment": {
+        "category": "weapon",
+        "limit_per_figure": 1,
+        "required_skill": {"skill": "archery", "level": 2},
+        "effects": {
+          "missile": 3
+        }
+      },
+      "combat_use": {
+        "target": "opposing_unit",
+        "range": "ranged",
+        "damage": 4
+      },
+      "description": "The basic bow for skilled archers."
+    },
+    
+    "hide_shield": {
+      "name": "Hide Shield",
+      "tag": "hshd",
+      "category": "shield",
+      "weight": 5,
+      "equipment": {
+        "category": "shield",
+        "limit_per_figure": 1,
+        "required_skill": {"skill": "parry", "level": 0},
+        "effects": {
+          "initiative": -1,
+          "defense": 2
+        }
+      },
+      "description": "The basic shield."
+    },
+    
+    "coif": {
+      "name": "Coif",
+      "tag": "coif",
+      "category": "helmet",
+      "weight": 4,
+      "equipment": {
+        "category": "helmet",
+        "limit_per_figure": 1,
+        "required_skill": {"skill": "combat", "level": 0},
+        "effects": {
+          "initiative": -1,
+          "defense": 2
+        }
+      },
+      "description": "The basic head protection."
+    },
+    
+    "club": {
+      "name": "Club",
+      "tag": "club",
+      "category": "weapon",
+      "weight": 1,
+      "equipment": {
+        "category": "weapon",
+        "limit_per_figure": 1,
+        "required_skill": {"skill": "combat", "level": 1},
+        "effects": {
+          "melee": 1,
+          "damage": 1
+        }
+      },
+      "description": "The simples weapon, a large carved wood-piece."
+    },
+    
+    "food": {
+      "name": "Food",
+      "tag": "food",
+      "category": "food",
+      "weight": 1,
+      "equipment": {
+        "category": "food",
+        "limit_per_figure": 1
+      },
+      "description": "Emergency rations, to be used to feed your harassed troops when they can't buy their own."
+    },
+    
+    "grain": {
+      "name": "Grain",
+      "tag": "grai",
+      "category": "food",
+      "weight": 8,
+      "equipment": {
+        "category": "food",
+        "limit_per_figure": 1
+      },
+      "description": "Harvested and grounded grain."
+    },
+    
+    "tool": {
+      "name": "Tool",
+      "tag": "tool",
+      "category": "tool",
+      "weight": 1,
+      "equipment": {
+        "category": "tool",
+        "limit_per_figure": 1
+      },
+      "effect_description": "Tools speed up the skills of artisans, and reduce by 33% the time required to ply their craft.",
+      "description": "Tools speed up the skills of artisans."
+    },
+    
+    "mule": {
+      "name": "Mule",
+      "tag": "mule",
+      "category": "mount",
+      "weight": 80,
+      "capacity": {
+        "walking": 150
+      },
+      "description": "The pack animal per excellence, docile and suited for long caravan duty."
+    },
+    
+    "wagon": {
+      "name": "Wagon",
+      "tag": "wago",
+      "category": "mount",
+      "weight": 250,
+      "capacity": {
+        "walking": 0,
+        "equipped_walking": 800
+      },
+      "equipment": {
+        "category": "mount",
+        "limit_per_figure": 1,
+        "effects": {
+          "initiative": -1,
+          "melee": -1,
+          "defense": 1
+        }
+      },
+      "description": "The moving contraption of base, with a horse, platform and storage space for caravans."
+    },
+    
+    "wood": {
+      "name": "Wood",
+      "tag": "wood",
+      "category": "resource",
+      "weight": 20,
+      "description": "Felled, cut and without bothersome twigs, a set of wood logs."
+    },
+    
+    "iron": {
+      "name": "Iron",
+      "tag": "iron",
+      "category": "resource",
+      "weight": 8,
+      "description": "A set of refined iron ingots, ready for plying and forging into useful items."
+    },
+    
+    "stone": {
+      "name": "Stone",
+      "tag": "ston",
+      "category": "resource",
+      "weight": 20,
+      "description": "A cubit of stones, cut and ready for construction."
+    },
+    
+    "herbs": {
+      "name": "Herbs",
+      "tag": "herb",
+      "category": "resource",
+      "weight": 1,
+      "description": "Magical herbs, for potions, rituals and other."
+    },
+    
+    "hide": {
+      "name": "Hide",
+      "tag": "hide",
+      "category": "resource",
+      "weight": 1,
+      "description": "The skinned and prepared pelts of animals, for luxury or just clothing."
+    },
+    
+    "fish": {
+      "name": "Fish",
+      "tag": "fish",
+      "category": "food",
+      "weight": 2,
+      "equipment": {
+        "category": "food",
+        "limit_per_figure": 1
+      },
+      "description": "The basic staple of the sea, rivers and lakes."
+    },
+    
+    "cattle": {
+      "name": "Cattle",
+      "tag": "catt",
+      "category": "food",
+      "weight": 300,
+      "capacity": {
+        "walking": 299
+      },
+      "equipment": {
+        "category": "food",
+        "limit_per_figure": 1
+      },
+      "description": "The basic food animal."
+    },
+    
+    "mana": {
+      "name": "Mana",
+      "tag": "mana",
+      "category": "magic",
+      "weight": 0,
+      "description": "The magical power unit."
+    },
+    
+    "magic_ring_basic": {
+      "name": "Basic Magic Ring",
+      "tag": "mrbas",
+      "category": "magic_item",
+      "weight": 0,
+      "equipment": {
+        "category": "ring",
+        "limit_per_figure": 2,
+        "effects": {
+          "magic_power": 1
+        }
+      },
+      "description": "A low-level magical ring with minor enchantments."
+    },
+    
+    "magic_amulet_basic": {
+      "name": "Basic Magic Amulet",
+      "tag": "mabas",
+      "category": "magic_item",
+      "weight": 0,
+      "equipment": {
+        "category": "amulet",
+        "limit_per_figure": 1,
+        "effects": {
+          "magic_defense": 1
+        }
+      },
+      "description": "A low-level magical amulet providing minor protection."
+    }
+  }
+}
