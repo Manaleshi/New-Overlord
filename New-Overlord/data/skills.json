@@ -1,0 +1,596 @@
+{
+  "skills": {
+    "combat": {
+      "name": "Combat",
+      "tag": "cmbt",
+      "category": "combat",
+      "is_basic": true,
+      "is_combat_skill": true,
+      "unit_restrictions": ["follower", "leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 30,
+          "cost_per_day": 1,
+          "prerequisites": [],
+          "effects": {
+            "melee": 1,
+            "defense": 1
+          },
+          "description": "The basic combat skill."
+        },
+        "2": {
+          "days_required": 45,
+          "cost_per_day": 1,
+          "prerequisites": [{"skill": "combat", "level": 1}],
+          "effects": {
+            "melee": 2,
+            "defense": 2
+          },
+          "description": "Advanced combat training."
+        }
+      },
+      "opens_skills": ["blades", "archery", "melee", "parry"],
+      "description": "The basic combat skill."
+    },
+    
+    "blades": {
+      "name": "Blades",
+      "tag": "blde",
+      "category": "combat",
+      "is_combat_skill": true,
+      "unit_restrictions": ["follower", "leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 30,
+          "cost_per_day": 1,
+          "prerequisites": [{"skill": "combat", "level": 1}],
+          "effects": {
+            "melee": 1,
+            "defense": 1
+          },
+          "description": "The art of bladed weapons."
+        },
+        "2": {
+          "days_required": 45,
+          "cost_per_day": 1,
+          "prerequisites": [{"skill": "blades", "level": 1}],
+          "effects": {
+            "melee": 2,
+            "defense": 2
+          },
+          "description": "Advanced blade mastery."
+        }
+      },
+      "description": "The art of bladed weapons."
+    },
+    
+    "archery": {
+      "name": "Archery",
+      "tag": "arch",
+      "category": "combat",
+      "is_combat_skill": true,
+      "unit_restrictions": ["follower", "leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 30,
+          "cost_per_day": 1,
+          "prerequisites": [{"skill": "combat", "level": 1}],
+          "effects": {
+            "missile": 1
+          },
+          "description": "Basic bow and arrow skills."
+        },
+        "2": {
+          "days_required": 45,
+          "cost_per_day": 1,
+          "prerequisites": [{"skill": "archery", "level": 1}],
+          "effects": {
+            "missile": 2
+          },
+          "description": "Advanced archery techniques."
+        }
+      },
+      "description": "The skill of the bow."
+    },
+    
+    "melee": {
+      "name": "Melee",
+      "tag": "mele",
+      "category": "combat",
+      "is_combat_skill": true,
+      "unit_restrictions": ["follower", "leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 30,
+          "cost_per_day": 1,
+          "prerequisites": [{"skill": "combat", "level": 1}],
+          "effects": {
+            "melee": 2
+          },
+          "description": "Hand-to-hand combat mastery."
+        }
+      },
+      "description": "Hand-to-hand combat mastery."
+    },
+    
+    "parry": {
+      "name": "Parry",
+      "tag": "parr",
+      "category": "combat",
+      "is_combat_skill": true,
+      "unit_restrictions": ["follower", "leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 30,
+          "cost_per_day": 1,
+          "prerequisites": [{"skill": "combat", "level": 1}],
+          "effects": {
+            "defense": 2
+          },
+          "description": "Defensive combat techniques."
+        }
+      },
+      "description": "Defensive combat techniques."
+    },
+    
+    "magecraft": {
+      "name": "Magecraft",
+      "tag": "mage",
+      "category": "magic",
+      "is_basic": true,
+      "is_magic_skill": true,
+      "unit_restrictions": ["leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 30,
+          "cost_per_day": 2,
+          "prerequisites": [],
+          "effects": {
+            "max_mana": 1
+          },
+          "description": "The basic magic skill."
+        },
+        "2": {
+          "days_required": 45,
+          "cost_per_day": 2,
+          "prerequisites": [{"skill": "magecraft", "level": 1}],
+          "effects": {
+            "max_mana": 2
+          },
+          "description": "Advanced magical understanding."
+        }
+      },
+      "opens_skills": ["air", "earth", "fire", "water", "void"],
+      "description": "The basic magic skill. Only leaders may study this skill."
+    },
+    
+    "air": {
+      "name": "Air Magic",
+      "tag": "air",
+      "category": "magic",
+      "is_magic_skill": true,
+      "elemental": true,
+      "unit_restrictions": ["leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 30,
+          "cost_per_day": 2,
+          "prerequisites": [{"skill": "magecraft", "level": 1}],
+          "effects": {
+            "max_mana": 1
+          },
+          "spells_learned": ["wind_gust", "levitation"],
+          "description": "Control over air and wind."
+        },
+        "2": {
+          "days_required": 45,
+          "cost_per_day": 2,
+          "prerequisites": [{"skill": "air", "level": 1}],
+          "effects": {
+            "max_mana": 2
+          },
+          "spells_learned": ["lightning_bolt", "flight"],
+          "description": "Advanced air manipulation."
+        }
+      },
+      "climate_bonus": {
+        "season": "winter",
+        "modifier": 1.1
+      },
+      "description": "The elemental skill of air magic."
+    },
+    
+    "earth": {
+      "name": "Earth Magic",
+      "tag": "erth",
+      "category": "magic",
+      "is_magic_skill": true,
+      "elemental": true,
+      "unit_restrictions": ["leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 30,
+          "cost_per_day": 2,
+          "prerequisites": [{"skill": "magecraft", "level": 1}],
+          "effects": {
+            "max_mana": 1
+          },
+          "spells_learned": ["stone_skin", "detect_minerals"],
+          "description": "Control over earth and stone."
+        },
+        "2": {
+          "days_required": 45,
+          "cost_per_day": 2,
+          "prerequisites": [{"skill": "earth", "level": 1}],
+          "effects": {
+            "max_mana": 2
+          },
+          "spells_learned": ["earthquake", "stone_wall"],
+          "description": "Advanced earth manipulation."
+        }
+      },
+      "climate_bonus": {
+        "season": "spring",
+        "modifier": 1.1
+      },
+      "description": "The elemental skill of earth magic."
+    },
+    
+    "fire": {
+      "name": "Fire Magic",
+      "tag": "fire",
+      "category": "magic",
+      "is_magic_skill": true,
+      "elemental": true,
+      "unit_restrictions": ["leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 30,
+          "cost_per_day": 2,
+          "prerequisites": [{"skill": "magecraft", "level": 1}],
+          "effects": {
+            "max_mana": 1
+          },
+          "spells_learned": ["flame", "heat_metal"],
+          "description": "Control over fire and heat."
+        },
+        "2": {
+          "days_required": 45,
+          "cost_per_day": 2,
+          "prerequisites": [{"skill": "fire", "level": 1}],
+          "effects": {
+            "max_mana": 2
+          },
+          "spells_learned": ["fireball", "inferno"],
+          "description": "Advanced fire manipulation."
+        }
+      },
+      "climate_bonus": {
+        "season": "summer",
+        "modifier": 1.1
+      },
+      "description": "The elemental skill of fire magic."
+    },
+    
+    "water": {
+      "name": "Water Magic",
+      "tag": "watr",
+      "category": "magic",
+      "is_magic_skill": true,
+      "elemental": true,
+      "unit_restrictions": ["leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 30,
+          "cost_per_day": 2,
+          "prerequisites": [{"skill": "magecraft", "level": 1}],
+          "effects": {
+            "max_mana": 1
+          },
+          "spells_learned": ["water_breathing", "fog"],
+          "description": "Control over water and ice."
+        },
+        "2": {
+          "days_required": 45,
+          "cost_per_day": 2,
+          "prerequisites": [{"skill": "water", "level": 1}],
+          "effects": {
+            "max_mana": 2
+          },
+          "spells_learned": ["ice_storm", "tidal_wave"],
+          "description": "Advanced water manipulation."
+        }
+      },
+      "climate_bonus": {
+        "season": "autumn",
+        "modifier": 1.1
+      },
+      "description": "The elemental skill of water magic."
+    },
+    
+    "void": {
+      "name": "Void Magic",
+      "tag": "void",
+      "category": "magic",
+      "is_magic_skill": true,
+      "elemental": true,
+      "unit_restrictions": ["leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 30,
+          "cost_per_day": 2,
+          "prerequisites": [{"skill": "magecraft", "level": 1}],
+          "effects": {
+            "max_mana": 1
+          },
+          "spells_learned": ["dispel_magic", "teleport"],
+          "description": "Control over the void and space."
+        },
+        "2": {
+          "days_required": 45,
+          "cost_per_day": 2,
+          "prerequisites": [{"skill": "void", "level": 1}],
+          "effects": {
+            "max_mana": 2
+          },
+          "spells_learned": ["dimension_door", "banishment"],
+          "description": "Advanced void manipulation."
+        }
+      },
+      "description": "The elemental skill of void magic."
+    },
+    
+    "scouting": {
+      "name": "Scouting",
+      "tag": "scou",
+      "category": "exploration",
+      "is_basic": true,
+      "unit_restrictions": ["follower", "leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 15,
+          "cost_per_day": 1,
+          "prerequisites": [],
+          "effects": {
+            "observation": 1
+          },
+          "special": "Allows follower units to move independently",
+          "description": "The basic exploration skill, allowing a follower unit to move on its own."
+        },
+        "2": {
+          "days_required": 30,
+          "cost_per_day": 1,
+          "prerequisites": [{"skill": "scouting", "level": 1}],
+          "effects": {
+            "observation": 2
+          },
+          "description": "Advanced scouting techniques."
+        }
+      },
+      "opens_skills": ["plainswalk", "hillswalk", "forestwalk", "desertwalk", "swampwalk", "stealth"],
+      "description": "The basic exploration skill."
+    },
+    
+    "plainswalk": {
+      "name": "Plainswalk",
+      "tag": "plwk",
+      "category": "land_lore",
+      "unit_restrictions": ["follower", "leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 15,
+          "cost_per_day": 1,
+          "prerequisites": [{"skill": "scouting", "level": 1}],
+          "effects": {
+            "riding_capacity": 10
+          },
+          "survival": {
+            "terrain": "plains",
+            "food_per_10_days": 1
+          },
+          "description": "The knowledge of the wide plains, their resources, and how to survive there."
+        }
+      },
+      "description": "Plains survival and navigation."
+    },
+    
+    "hillswalk": {
+      "name": "Hillswalk",
+      "tag": "hiwk",
+      "category": "land_lore",
+      "unit_restrictions": ["follower", "leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 15,
+          "cost_per_day": 1,
+          "prerequisites": [{"skill": "scouting", "level": 1}],
+          "effects": {
+            "walking_capacity": 10
+          },
+          "survival": {
+            "terrain": "hills",
+            "food_per_10_days": 1
+          },
+          "description": "The knowledge of the rolling hills, their resources, and how to survive there."
+        }
+      },
+      "description": "Hills survival and navigation."
+    },
+    
+    "forestwalk": {
+      "name": "Forestwalk",
+      "tag": "fowk",
+      "category": "land_lore",
+      "unit_restrictions": ["follower", "leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 30,
+          "cost_per_day": 1,
+          "prerequisites": [{"skill": "scouting", "level": 1}],
+          "effects": {
+            "observation": 1
+          },
+          "survival": {
+            "terrain": "forest",
+            "food_per_10_days": 1
+          },
+          "description": "The knowledge of the deep forest, the fauna, the resources and how to survive there."
+        }
+      },
+      "description": "Forest survival and navigation."
+    },
+    
+    "desertwalk": {
+      "name": "Desertwalk",
+      "tag": "dewk",
+      "category": "land_lore",
+      "unit_restrictions": ["follower", "leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 15,
+          "cost_per_day": 1,
+          "prerequisites": [{"skill": "scouting", "level": 1}],
+          "effects": {
+            "walking_capacity": 20
+          },
+          "survival": {
+            "terrain": "desert",
+            "food_per_15_days": 1
+          },
+          "description": "The knowledge of the hot desert, and how to survive its arid climates."
+        }
+      },
+      "description": "Desert survival and navigation."
+    },
+    
+    "swampwalk": {
+      "name": "Swampwalk",
+      "tag": "swwk",
+      "category": "land_lore",
+      "unit_restrictions": ["follower", "leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 30,
+          "cost_per_day": 1,
+          "prerequisites": [{"skill": "scouting", "level": 1}],
+          "effects": {
+            "stealth": 1
+          },
+          "survival": {
+            "terrain": "swamp",
+            "food_per_15_days": 1
+          },
+          "description": "The knowledge of the dank swamps, their peculiar flora, and how to survive there."
+        }
+      },
+      "description": "Swamp survival and navigation."
+    },
+    
+    "stealth": {
+      "name": "Stealth",
+      "tag": "stea",
+      "category": "combat",
+      "is_combat_skill": true,
+      "unit_restrictions": ["follower", "leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 30,
+          "cost_per_day": 2,
+          "prerequisites": [{"skill": "scouting", "level": 1}],
+          "effects": {
+            "stealth": 1
+          },
+          "description": "How to hide and dissimule oneself from sight."
+        }
+      },
+      "description": "The art of concealment."
+    },
+    
+    "observation": {
+      "name": "Observation",
+      "tag": "obse",
+      "category": "exploration",
+      "unit_restrictions": ["follower", "leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 30,
+          "cost_per_day": 2,
+          "prerequisites": [{"skill": "relationships", "level": 1}],
+          "effects": {
+            "observation": 1
+          },
+          "description": "How to stand back, and really look at things."
+        }
+      },
+      "description": "The art of careful watching."
+    },
+    
+    "farming": {
+      "name": "Farming",
+      "tag": "farm",
+      "category": "craft",
+      "is_basic": true,
+      "unit_restrictions": ["follower", "leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 15,
+          "cost_per_day": 1,
+          "prerequisites": [],
+          "production": {
+            "item": "grain",
+            "time_days": 30,
+            "quantity": 1,
+            "terrain_required": ["plains", "hills"]
+          },
+          "description": "Growing crops and tending fields."
+        }
+      },
+      "description": "Agricultural skills."
+    },
+    
+    "woodwork": {
+      "name": "Woodwork",
+      "tag": "wood",
+      "category": "craft",
+      "is_basic": true,
+      "unit_restrictions": ["follower", "leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 15,
+          "cost_per_day": 1,
+          "prerequisites": [],
+          "production": {
+            "item": "wood",
+            "time_days": 20,
+            "quantity": 1
+          },
+          "description": "Working with wood and timber."
+        }
+      },
+      "description": "Woodworking and carpentry."
+    },
+    
+    "mining": {
+      "name": "Mining",
+      "tag": "mine",
+      "category": "craft",
+      "is_basic": true,
+      "unit_restrictions": ["follower", "leader", "hero"],
+      "levels": {
+        "1": {
+          "days_required": 15,
+          "cost_per_day": 1,
+          "prerequisites": [],
+          "production": {
+            "item": "stone",
+            "time_days": 20,
+            "quantity": 1,
+            "terrain_required": ["mountains", "hills"]
+          },
+          "description": "Extracting minerals and stone."
+        }
+      },
+      "description": "Mining and quarrying."
+    }
+  }
+}
